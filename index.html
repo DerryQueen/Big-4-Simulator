@@ -3,854 +3,789 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Big 4 Survival</title>
+    <title>Big 4 Survival: Terminal Edition</title>
     <style>
-        /* Minimalist Dark Mode Theme */
+        /* --- 1. Global Reset & Typography --- */
         :root {
-            --bg-color: #000000;
-            --text-color: #ffffff;
-            --accent-color: #333333;
-            --border-color: #ffffff;
-            --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --bg-color: #0a0a0a;
+            --text-color: #e0e0e0;
+            --accent-green: #00ff41; /* Matrix Green */
+            --accent-red: #ff3333;
+            --accent-blue: #00ccff; /* Cyber Blue */
+            --accent-gold: #ffd700;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --font-mono: "Fira Code", "Courier New", Courier, monospace;
         }
 
         * {
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
             background-color: var(--bg-color);
             color: var(--text-color);
-            font-family: var(--font-main);
+            font-family: var(--font-mono);
             margin: 0;
             padding: 0;
             height: 100vh;
             display: flex;
             flex-direction: column;
-            overflow: hidden; /* Prevent body scroll, handle inside main */
+            overflow: hidden;
+            font-size: 14px;
         }
 
-        /* Header: Status Bar */
-        #status-bar {
+        /* --- 2. Login Overlay --- */
+        #login-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        #login-box {
+            background: var(--glass-bg);
+            border: 1px solid var(--accent-green);
+            padding: 40px;
+            border-radius: 4px;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
+        }
+
+        #login-title {
+            color: var(--accent-green);
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        #username-input {
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid var(--text-color);
+            color: var(--text-color);
+            font-family: var(--font-mono);
+            font-size: 18px;
+            padding: 10px;
+            outline: none;
+            width: 200px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        #username-input:focus {
+            border-bottom-color: var(--accent-green);
+        }
+
+        #start-btn {
+            background: var(--accent-green);
+            color: #000;
+            border: none;
+            padding: 12px 30px;
+            font-family: var(--font-mono);
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.3s;
+        }
+
+        #start-btn:hover {
+            box-shadow: 0 0 15px var(--accent-green);
+            transform: scale(1.05);
+        }
+
+        /* --- 3. Dashboard / HUD --- */
+        #hud {
             padding: 15px;
-            border-bottom: 2px solid var(--border-color);
-            background-color: var(--bg-color);
+            background: rgba(0, 0, 0, 0.8);
+            border-bottom: 1px solid var(--glass-border);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
             z-index: 10;
         }
 
-        .status-row {
+        .hud-info {
+            grid-column: 1 / -1;
             display: flex;
             justify-content: space-between;
+            font-size: 12px;
+            color: #888;
             margin-bottom: 5px;
-            font-size: 1rem;
-            font-weight: bold;
+            border-bottom: 1px solid #222;
+            padding-bottom: 5px;
         }
 
-        .stats-row {
+        .stat-bar-container {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .stat-label {
+            font-size: 10px;
             display: flex;
             justify-content: space-between;
-            font-size: 0.9rem;
-            opacity: 0.9;
+            text-transform: uppercase;
         }
 
-        /* Main: Game Log */
-        #game-log {
+        .progress-track {
+            height: 6px;
+            background: #222;
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 50%;
+            background: var(--text-color);
+            transition: width 0.5s ease-out, background-color 0.3s;
+        }
+
+        /* Dynamic Colors for Stats */
+        .fill-green { background: var(--accent-green); }
+        .fill-red { background: var(--accent-red); }
+        .fill-blue { background: var(--accent-blue); }
+        .fill-gold { background: var(--accent-gold); }
+
+        /* --- 4. Main Terminal (Log) --- */
+        #terminal {
             flex: 1;
             padding: 20px;
             overflow-y: auto;
-            scroll-behavior: smooth;
-            font-size: 1.1rem;
+            font-size: 14px;
             line-height: 1.6;
+            color: #ccc;
+            scroll-behavior: smooth;
         }
 
-        #game-log p {
-            margin-bottom: 12px;
-            animation: fadeIn 0.5s ease-in;
+        .log-entry {
+            margin-bottom: 20px;
+            padding-left: 10px;
+            border-left: 2px solid var(--glass-border);
+            animation: fadeIn 0.3s ease-out;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(5px); }
-            to { opacity: 1; transform: translateY(0); }
+        .log-entry.system {
+            border-left-color: var(--accent-blue);
+            color: var(--accent-blue);
+            font-size: 12px;
         }
 
-        /* Footer: Controls */
+        .log-entry.event {
+            border-left-color: var(--text-color);
+        }
+
+        .log-entry.warning {
+            border-left-color: var(--accent-red);
+            color: var(--accent-red);
+        }
+
+        .log-entry.success {
+            border-left-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        /* Typing Cursor */
+        .cursor::after {
+            content: '▋';
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateX(-5px); } to { opacity: 1; transform: translateX(0); } }
+
+        /* --- 5. Controls (Glassmorphism) --- */
         #controls {
             padding: 20px;
-            border-top: 2px solid var(--border-color);
-            background-color: var(--bg-color);
+            background: rgba(0, 0, 0, 0.9);
+            border-top: 1px solid var(--glass-border);
             display: flex;
             flex-direction: column;
-            gap: 15px; /* Spacing between buttons */
+            gap: 12px;
+            min-height: 150px; /* Reserve space */
+            justify-content: center;
         }
 
-        button {
-            background-color: var(--bg-color);
+        .control-btn {
+            background: var(--glass-bg);
+            backdrop-filter: blur(5px);
+            border: 1px solid var(--glass-border);
             color: var(--text-color);
-            border: 2px solid var(--border-color);
-            padding: 18px;
-            font-size: 1.2rem;
-            font-weight: bold;
+            padding: 15px;
+            font-family: var(--font-mono);
+            font-size: 14px;
             cursor: pointer;
-            width: 100%; /* Full width for easy tapping */
-            transition: background-color 0.2s, color 0.2s;
-            text-align: center;
+            transition: all 0.2s;
+            text-align: left;
+            position: relative;
+            overflow: hidden;
         }
 
-        button:active {
-            background-color: var(--text-color);
-            color: var(--bg-color);
+        .control-btn:hover {
+            border-color: var(--accent-green);
+            background: rgba(0, 255, 65, 0.05);
+            box-shadow: 0 0 10px rgba(0, 255, 65, 0.1);
         }
 
-        button:disabled {
+        .control-btn:active {
+            transform: scale(0.98);
+        }
+
+        .control-btn::before {
+            content: "> ";
+            color: var(--accent-green);
             opacity: 0.5;
-            cursor: not-allowed;
-            border-color: #555;
         }
 
-        /* Scrollbar Styling */
-        ::-webkit-scrollbar {
-            width: 8px;
+        /* --- 6. End Year Report Overlay --- */
+        #report-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            z-index: 900;
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            padding: 40px;
+            overflow-y: auto;
         }
-        ::-webkit-scrollbar-track {
-            background: var(--bg-color);
+
+        .report-header {
+            font-size: 20px;
+            color: var(--accent-green);
+            border-bottom: 2px solid var(--accent-green);
+            margin-bottom: 30px;
+            padding-bottom: 10px;
+            text-transform: uppercase;
         }
-        ::-webkit-scrollbar-thumb {
-            background: #555;
-            border-radius: 4px;
+
+        .report-section {
+            margin-bottom: 30px;
         }
+
+        .report-label {
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+
+        .report-value {
+            font-size: 24px;
+            color: #fff;
+        }
+
+        .val-gain { color: var(--accent-green); }
+        .val-loss { color: var(--accent-red); }
 
     </style>
 </head>
 <body>
 
-    <header id="status-bar">
-        <div class="status-row">
-            <span id="year-display">Year 1</span>
-            <span id="quarter-display">Q1/4</span>
+    <!-- Login Screen -->
+    <div id="login-screen">
+        <div id="login-box">
+            <div id="login-title">SYSTEM LOGIN</div>
+            <input type="text" id="username-input" placeholder="ENTER ID / ALIAS" maxlength="12" autocomplete="off">
+            <br>
+            <button id="start-btn">INITIALIZE</button>
         </div>
-        <div class="status-row">
-            <span id="level-display">Audit Associate 1</span>
+    </div>
+
+    <!-- Year End Report Screen -->
+    <div id="report-screen">
+        <div class="report-header">PERFORMANCE REVIEW (Q4)</div>
+        <div id="report-content"></div>
+        <button class="control-btn" id="report-close-btn" style="margin-top:auto; text-align:center;">ACKNOWLEDGE</button>
+    </div>
+
+    <!-- HUD -->
+    <header id="hud">
+        <div class="hud-info">
+            <span id="user-display">USER: GUEST</span>
+            <span id="time-display">Y1 Q1</span>
+            <span id="role-display">A1</span>
         </div>
-        <div class="stats-row">
-            <span>HP: <span id="hp-val">100</span></span>
-            <span>SAN: <span id="san-val">100</span></span>
-            <span>KPI: <span id="kpi-val">50</span></span>
+
+        <!-- Health (精力) -->
+        <div class="stat-bar-container">
+            <div class="stat-label"><span>HEALTH</span><span id="health-val">100</span></div>
+            <div class="progress-track">
+                <div class="progress-fill fill-red" id="health-bar" style="width: 100%;"></div>
+            </div>
+        </div>
+
+        <!-- Wealth (财富) -->
+        <div class="stat-bar-container">
+            <div class="stat-label"><span>WEALTH</span><span id="wealth-val">1000</span></div>
+            <div class="progress-track">
+                <div class="progress-fill fill-gold" id="wealth-bar" style="width: 10%;"></div> <!-- Wealth is unbounded, verify width logic -->
+            </div>
+        </div>
+
+        <!-- Sanity (压力/精神) -->
+        <div class="stat-bar-container">
+            <div class="stat-label"><span>SANITY</span><span id="sanity-val">100</span></div>
+            <div class="progress-track">
+                <div class="progress-fill fill-blue" id="sanity-bar" style="width: 100%;"></div>
+            </div>
+        </div>
+
+        <!-- Connection (人脉) -->
+        <div class="stat-bar-container">
+            <div class="stat-label"><span>CONNECTION</span><span id="conn-val">0</span></div>
+            <div class="progress-track">
+                <div class="progress-fill fill-green" id="conn-bar" style="width: 0%;"></div>
+            </div>
         </div>
     </header>
 
-    <main id="game-log">
-        <!-- Text will be appended here -->
+    <!-- Terminal -->
+    <main id="terminal">
+        <!-- Logs go here -->
     </main>
 
+    <!-- Controls -->
     <footer id="controls">
-        <!-- Buttons will be injected here -->
+        <!-- Buttons injected here -->
     </footer>
 
     <script>
-        // --- Game Constants ---
-        const CAREER_LADDER = [
-            'Audit Associate 1 (A1)',
-            'Audit Associate 2 (A2)',
-            'Senior Associate 1 (S1)',
-            'Senior Associate 2 (S2)',
-            'Senior Associate 3 (S3)',
-            'Manager 1 (M1)',
-            'Manager 2 (M2)',
-            'Senior Manager (SM)',
-            'Partner (Par)'
+        // --- CONSTANTS ---
+        const CAREER_LADDER = ['A1', 'A2', 'S1', 'S2', 'S3', 'M1', 'M2', 'SM', 'Par'];
+
+        // Base Salary per Quarter (Wealth)
+        const SALARY_TABLE = [
+            500,  // A1
+            600,  // A2
+            800,  // S1
+            900,  // S2
+            1000, // S3
+            1500, // M1
+            1800, // M2
+            2500, // SM
+            5000  // Par
         ];
 
-        // --- Game State ---
+        // --- STATE ---
         const gameState = {
+            name: "GUEST",
             year: 1,
-            quarter: 1, // 1-4 representing Q1-Q4
-            levelIndex: 0, // Points to CAREER_LADDER index
+            quarter: 1,
+            levelIndex: 0,
             stats: {
                 health: 100,
+                wealth: 1000,
                 sanity: 100,
-                performance: 50
+                connection: 0,
+                performance: 50 // Hidden KPI, resets yearly
+            },
+            wealthStartOfYear: 1000,
+            history: [] // Log achievements
+        };
+
+        // --- EVENTS (Expanded for Quad-Metrics) ---
+        // Added 'wealth' and 'connection' impacts to existing data.
+        const gameEvents = [
+            {
+                id: 1, min: 0, max: 1,
+                text: "Manager 让你去打印室装订 50 本报告，墨粉洒了一地。",
+                choices: [
+                    { label: "自己动手修", effect: { h: -5, s: -5, w: 0, c: 0, p: 2 }, log: "修好了，但衬衫毁了(-Wealth for cleaning?)。Manager 夸你 Handy。" },
+                    { label: "找 Admin 姐姐帮忙", effect: { h: 0, s: 5, w: -50, c: 2, p: 0 }, log: "请 Admin 喝了杯豪华奶茶(Wealth -50)，建立了良好的行政关系。" }
+                ]
+            },
+            {
+                id: 2, min: 0, max: 2,
+                text: "深夜 2 点，Senior 让你别填加班费(OT)以保项目预算。",
+                choices: [
+                    { label: "老实听话 (No OT)", effect: { h: 0, s: -10, w: -200, c: 5, p: 5 }, log: "牺牲了加班费(Wealth -200 equivalent)，但 Senior 觉得你懂事。" },
+                    { label: "据实申报", effect: { h: 0, s: 5, w: 200, c: -5, p: -10 }, log: "拿到了加班费(Wealth +200)，但被 Manager 标记为'不懂事'。" }
+                ]
+            },
+            {
+                id: 3, min: 1, max: 3,
+                text: "去偏远山区做煤炭盘点。零下 10 度，全是煤灰。",
+                choices: [
+                    { label: "爬煤堆精准盘点", effect: { h: -15, s: -5, w: 0, c: 5, p: 10 }, log: "吸入两斤粉尘，盘点无差异。客户厂长敬你白酒(Health -15)。" },
+                    { label: "抽样看看", effect: { h: -2, s: 5, w: 0, c: 0, p: -5 }, log: "早早回酒店躺着，心里忐忑不安。" }
+                ]
+            },
+            {
+                id: 4, min: 2, max: 4,
+                text: "客户财务总监(FC)摔了文件夹，嫌你 PBC List 太多。",
+                choices: [
+                    { label: "卑微道歉", effect: { h: 0, s: -15, w: 0, c: 0, p: 5 }, log: "自尊受挫(Sanity -15)，但拿到了资料。" },
+                    { label: "据理力争", effect: { h: 0, s: 10, w: 0, c: -10, p: -10 }, log: "FC 投诉你态度恶劣，Review Note +1。" }
+                ]
+            },
+            {
+                id: 5, min: 3, max: 5,
+                text: "猎头介绍大厂战略岗，薪资涨幅 50%，但这周要面试。",
+                choices: [
+                    { label: "请病假面试", effect: { h: 5, s: 20, w: -100, c: 0, p: -15 }, log: "面试顺利(Sanity +20)，但扣了全勤奖(Wealth -100)且耽误了进度。" },
+                    { label: "拒绝诱惑", effect: { h: -5, s: -10, w: 0, c: 5, p: 10 }, log: "你挂了电话继续调表。合伙人梦+1。" }
+                ]
+            },
+            {
+                id: 6, min: 4, max: 6,
+                text: "你带的小朋友(A1)崩溃大哭要离职，底稿一团糟。",
+                choices: [
+                    { label: "温柔安抚帮他做", effect: { h: -20, s: -5, w: 0, c: 10, p: 5 }, log: "你自己通宵填坑(Health -20)，小朋友把你当再生父母(Connection +10)。" },
+                    { label: "严厉批评", effect: { h: 0, s: 5, w: 0, c: -5, p: -5 }, log: "小朋友旷工了，烂摊子还是你的，且名声变差。" }
+                ]
+            },
+            {
+                id: 7, min: 5, max: 8,
+                text: "合伙人让你去 BD 大客户，对方暗示要回扣。",
+                choices: [
+                    { label: "严词拒绝", effect: { h: 0, s: 5, w: 0, c: 0, p: 0 }, log: "单子丢了。合伙人脸色难看，但你守住了底线。" },
+                    { label: "坚守合规", effect: { h: 0, s: 10, w: 0, c: 5, p: 5 }, log: "你用专业折服了客户(Connection +5)，虽然没给回扣也签了。" }
+                ]
+            },
+            // New "Hardcore" events
+            {
+                id: 101, min: 0, max: 8,
+                text: "实在太累了，看着窗外的暴雨，你犹豫要不要打豪华专车回家。",
+                choices: [
+                    { label: "打专车 (Wealth -50)", effect: { h: 5, s: 5, w: -50, c: 0, p: 0 }, log: "你在后座睡了一觉，稍微回了点血。" },
+                    { label: "挤地铁", effect: { h: -5, s: -5, w: 0, c: 0, p: 0 }, log: "被挤成了沙丁鱼，身心俱疲。" }
+                ]
+            },
+            {
+                id: 102, min: 0, max: 8,
+                text: "为了维护组内关系，大家提议去吃顿好的。",
+                choices: [
+                    { label: "请客 (Wealth -200)", effect: { h: 0, s: 5, w: -200, c: 15, p: 0 }, log: "大家欢呼雀跃，你在组里的人缘变好了(Connection +15)。" },
+                    { label: "AA制", effect: { h: 0, s: 0, w: -50, c: 2, p: 0 }, log: "平平淡淡的一顿饭。" }
+                ]
+            },
+            {
+                id: 103, min: 0, max: 8,
+                text: "年会到了，你需要上台表演。",
+                choices: [
+                    { label: "穿女装跳舞", effect: { h: -5, s: -10, w: 100, c: 20, p: 5 }, log: "Par 给你发了红包(Wealth +100)，全所都认识你了(Connection +20)！" },
+                    { label: "装病", effect: { h: 5, s: 5, w: 0, c: -10, p: -5 }, log: "大家觉得你不合群(Connection -10)。" }
+                ]
+            }
+        ];
+
+        // --- DOM ELEMENTS ---
+        const els = {
+            login: document.getElementById('login-screen'),
+            userInput: document.getElementById('username-input'),
+            startBtn: document.getElementById('start-btn'),
+            hud: {
+                user: document.getElementById('user-display'),
+                time: document.getElementById('time-display'),
+                role: document.getElementById('role-display'),
+                hVal: document.getElementById('health-val'),
+                hBar: document.getElementById('health-bar'),
+                wVal: document.getElementById('wealth-val'),
+                wBar: document.getElementById('wealth-bar'),
+                sVal: document.getElementById('sanity-val'),
+                sBar: document.getElementById('sanity-bar'),
+                cVal: document.getElementById('conn-val'),
+                cBar: document.getElementById('conn-bar')
+            },
+            terminal: document.getElementById('terminal'),
+            controls: document.getElementById('controls'),
+            report: {
+                screen: document.getElementById('report-screen'),
+                content: document.getElementById('report-content'),
+                btn: document.getElementById('report-close-btn')
             }
         };
 
-        // --- Game Data ---
-        const gameEvents = [
-            {
-                id: 1,
-                minLevel: 0,
-                maxLevel: 1,
-                text: "入职第一周，Manager 让你去打印室把 50 本报告装订好，但打印机突然卡纸了，墨粉洒了一地。",
-                choices: [
-                    {
-                        label: "自己动手修，弄得满身黑",
-                        effect: { health: -5, sanity: -5, performance: 2 },
-                        log: "你修好了打印机，但衬衫毁了。Manager 夸你'Handy'。"
-                    },
-                    {
-                        label: "找 Admin 姐姐帮忙",
-                        effect: { health: 0, sanity: 5, performance: 0 },
-                        log: "Admin 姐姐帮你搞定了，你请她喝了一杯奶茶。"
-                    }
-                ]
-            },
-            {
-                id: 2,
-                minLevel: 0,
-                maxLevel: 2,
-                text: "忙季深夜 2 点，你刚要在 Timesheet 上填加班费（OT），Senior 拍了拍你的肩膀：'项目预算不够了，建议填休假（OOT）或者别填'。",
-                choices: [
-                    {
-                        label: "老实听话，只填 8 小时",
-                        effect: { health: 0, sanity: -10, performance: 5 },
-                        log: "你牺牲了自己的钱包，但这让项目利润率看起来不错。"
-                    },
-                    {
-                        label: "头铁，据实申报 OT",
-                        effect: { health: 0, sanity: 5, performance: -10 },
-                        log: "Manager 找你谈话了，暗示你不懂'Big Picture'。"
-                    }
-                ]
-            },
-            {
-                id: 3,
-                minLevel: 1,
-                maxLevel: 3,
-                text: "被派去偏远山区做存货盘点（Stocktake）。零下 10 度，仓库里全是煤灰，且没有暖气。",
-                choices: [
-                    {
-                        label: "爬上煤堆，精准盘点",
-                        effect: { health: -15, sanity: -5, performance: 10 },
-                        log: "你吸入了两斤粉尘，但盘点差异率为 0。客户厂长敬了你一杯白酒。"
-                    },
-                    {
-                        label: "抽样看看，差不多得了",
-                        effect: { health: -2, sanity: 5, performance: -5 },
-                        log: "你早早回酒店躺着了，但心里总担心底稿会被 Q。"
-                    }
-                ]
-            },
-            {
-                id: 4,
-                minLevel: 2,
-                maxLevel: 4,
-                text: "客户财务总监（FC）是个暴脾气，因为你发了太多 PBC List（资料需求清单），他直接在会议室摔了文件夹。",
-                choices: [
-                    {
-                        label: "卑微道歉，陪笑脸",
-                        effect: { health: 0, sanity: -15, performance: 5 },
-                        log: "自尊心受挫，但拿到了资料。"
-                    },
-                    {
-                        label: "据理力争，这是审计程序",
-                        effect: { health: 0, sanity: 10, performance: -10 },
-                        log: "FC 向合伙人投诉你态度恶劣，你被挂了 Review Note。"
-                    }
-                ]
-            },
-            {
-                id: 5,
-                minLevel: 3,
-                maxLevel: 5,
-                text: "一个猎头神秘兮兮地联系你，说某互联网大厂有个战略分析岗（Strategic Analysis）的坑，薪资涨幅 50%，但要这周立马去面试。",
-                choices: [
-                    {
-                        label: "请病假去面试",
-                        effect: { health: 5, sanity: 20, performance: -15 },
-                        log: "面试感觉不错，对方对你的四大背景很感兴趣。但你的项目进度落下了一大截。"
-                    },
-                    {
-                        label: "拒绝诱惑，我要做合伙人",
-                        effect: { health: -5, sanity: -10, performance: 10 },
-                        log: "你挂了电话，继续在 Excel 里调平报表。你是四大卷王！"
-                    }
-                ]
-            },
-            {
-                id: 6,
-                minLevel: 4,
-                maxLevel: 6,
-                text: "你带的小朋友（A1）突然在客户现场哭了，说压力太大要离职，但他手里的底稿还是一团浆糊。",
-                choices: [
-                    {
-                        label: "温柔安抚，帮他做完",
-                        effect: { health: -20, sanity: -5, performance: 5 },
-                        log: "你是神仙 Senior，但你自己连续通宵了三天，发际线后移了。"
-                    },
-                    {
-                        label: "严厉批评，让他自己负责",
-                        effect: { health: 0, sanity: 5, performance: -5 },
-                        log: "小朋友直接旷工了，烂摊子还是得你收拾，Manager 对你的带队能力表示怀疑。"
-                    }
-                ]
-            },
-            {
-                id: 7,
-                minLevel: 5,
-                maxLevel: 8,
-                text: "合伙人让你去 BD（拓展业务）一个潜在的大客户，但对方暗示需要一点'回扣'才能签约。",
-                choices: [
-                    {
-                        label: "严词拒绝，坚守合规",
-                        effect: { health: 0, sanity: 5, performance: 0 },
-                        log: "单子丢了，合伙人虽然嘴上说做得对，但脸色很难看。"
-                    },
-                    {
-                        label: "甚至不用想，这是红线",
-                        effect: { health: 0, sanity: 10, performance: 5 },
-                        log: "你坚守了职业底线。虽然没业绩，但心里坦荡荡。"
-                    }
-                ]
-            },
-            {
-                id: 101,
-                minLevel: 0,
-                maxLevel: 2,
-                text: "每个月的'贴发票'日到了。看着面前堆积如山的打车票和粘稠的胶水，你感到一阵恶心。",
-                choices: [
-                    {
-                        label: "强迫症发作，每一张都贴得整整齐齐",
-                        effect: { health: -5, sanity: -5, performance: 2 },
-                        log: "Admin 夸你是全组贴得最好的，但你浪费了整整一下午的时间。"
-                    },
-                    {
-                        label: "大概齐粘一下，只要不掉就行",
-                        effect: { health: 0, sanity: 5, performance: -5 },
-                        log: "财务部把你的报销单退回来了，理由是'遮挡了发票代码'，你心态崩了。"
-                    }
-                ]
-            },
-            {
-                id: 102,
-                minLevel: 0,
-                maxLevel: 8,
-                text: "你的 Excel 突然卡死了（未响应），而你上一次保存是 3 小时前。",
-                choices: [
-                    {
-                        label: "绝望地等待它恢复响应",
-                        effect: { health: 0, sanity: -15, performance: 0 },
-                        log: "奇迹发生了！它恢复了！虽然你吓出了一身冷汗。"
-                    },
-                    {
-                        label: "直接强制关闭，重做",
-                        effect: { health: -10, "sanity": -10, performance: 5 },
-                        log: "你凭借记忆重做了一遍，速度惊人，但你的手指在颤抖。"
-                    }
-                ]
-            },
-            {
-                id: 103,
-                minLevel: 1,
-                maxLevel: 3,
-                text: "你是现场负责抽凭的小朋友，但客户的会计大姐心情不好，故意把仓库钥匙拿走了，让你干等。",
-                choices: [
-                    {
-                        label: "买杯星巴克去哄大姐",
-                        effect: { health: 0, sanity: 5, performance: 5 },
-                        log: "大姐喜笑颜开，不仅给了钥匙，还给了你一包瓜子。"
-                    },
-                    {
-                        label: "向 Manager 打小报告",
-                        effect: { health: 0, sanity: -5, performance: -5 },
-                        log: "Manager 觉得你连这点小事都搞不定，客户大姐以后专门盯着你找茬。"
-                    }
-                ]
-            },
-            {
-                id: 104,
-                minLevel: 2,
-                maxLevel: 5,
-                text: "今天是你的恋爱纪念日，但这周正好是 IPO 申报的关键期（Filing），全组都在打印室通宵。",
-                choices: [
-                    {
-                        label: "溜出去吃个饭再回来",
-                        effect: { health: 5, sanity: 10, performance: -15 },
-                        log: "对象很开心，但你回来时发现 Par 正在找你，你的电话没接。"
-                    },
-                    {
-                        label: "发个红包，继续加班",
-                        effect: { health: -5, sanity: -20, performance: 10 },
-                        log: "你保住了项目进度，但收到了一条分手短信：'你和底稿过一辈子吧'。"
-                    }
-                ]
-            },
-            {
-                id: 105,
-                minLevel: 3,
-                maxLevel: 6,
-                text: "Manager 突然离职去了甲方，留下了一个巨大的烂摊子项目，上面指定你来暂代 Site In-charge（现场负责人）。",
-                choices: [
-                    {
-                        label: "硬着头皮顶上",
-                        effect: { health: -15, sanity: -10, performance: 20 },
-                        log: "你每天睡 3 小时，成功填了坑。合伙人记住了你的名字。"
-                    },
-                    {
-                        label: "表示能力不足，请求支援",
-                        effect: { health: 5, sanity: 5, performance: -10 },
-                        log: "合伙人派了别的经理来，你轻松了，但晋升S3/M1的机会也没了。"
-                    }
-                ]
-            },
-            {
-                id: 106,
-                minLevel: 4,
-                maxLevel: 7,
-                text: "年底做预算（Budgeting），你发现如果不'吃'掉组员的时间（Under-reporting），项目就要亏损（Over-run）。",
-                choices: [
-                    {
-                        label: "让小朋友们别填 OT，保利润率",
-                        effect: { health: 0, sanity: 5, performance: 10 },
-                        log: "项目利润率很好看，Par 很满意，但小朋友们背地里叫你'周扒皮'。"
-                    },
-                    {
-                        label: "不管了，实报实销",
-                        effect: { health: 0, sanity: 5, performance: -15 },
-                        log: "Recovery Rate 很难看，你在经理会上被批斗了半小时。"
-                    }
-                ]
-            },
-            {
-                id: 107,
-                minLevel: 0,
-                maxLevel: 8,
-                text: "年会（Annual Dinner）到了，你是新入职的 A1/A2，按照'传统'，你需要上台表演一个极其羞耻的节目。",
-                choices: [
-                    {
-                        label: "豁出去了，穿女装跳舞",
-                        effect: { health: -5, sanity: -10, performance: 15 },
-                        log: "全场爆笑，Par 甚至给你发了个大红包。你在所里'出名'了。"
-                    },
-                    {
-                        label: "装病不去",
-                        effect: { health: 5, sanity: 5, performance: -5 },
-                        log: "你躲过了一劫，但大家觉得你这人'不合群'（Not a team player）。"
-                    }
-                ]
-            },
-            {
-                id: 108,
-                minLevel: 5,
-                maxLevel: 8,
-                text: "一家头部 PE（私募股权）想挖你去做投后管理，薪资翻倍，Work-Life Balance 看起来也不错。",
-                choices: [
-                    {
-                        label: "心动了，去面试",
-                        effect: { health: 10, sanity: 20, performance: -20 },
-                        log: "你拿到了 Offer，但在辞职前一晚，你突然舍不得这里这群一起熬夜的战友。你犹豫了。"
-                    },
-                    {
-                        label: "拒绝，我有合伙人梦",
-                        effect: { health: -5, sanity: -5, performance: 10 },
-                        log: "猎头骂你有病。你继续在四大燃烧生命。"
-                    }
-                ]
-            },
-            {
-                id: 109,
-                minLevel: 2,
-                maxLevel: 5,
-                text: "你在客户会议室连连看（Tick mark）时，不小心听到了客户财务总监和老板在隔壁吵架，似乎涉及做假账。",
-                choices: [
-                    {
-                        label: "假装没听见，多一事不如少一事",
-                        effect: { health: 0, sanity: -5, performance: 5 },
-                        log: "你选择了沉默，但良心隐隐作痛。"
-                    },
-                    {
-                        label: "偷偷告诉 Manager 风险点",
-                        effect: { health: 0, sanity: 5, performance: 10 },
-                        log: "Manager 让你重点审计这个科目，果然查出了大问题！"
-                    }
-                ]
-            },
-            {
-                id: 110,
-                minLevel: 6,
-                maxLevel: 8,
-                text: "你是 Senior Manager，合伙人让你帮忙'优化'掉一个刚怀孕的高级审计员（Counselling out）。",
-                choices: [
-                    {
-                        label: "执行命令，做个冷酷的杀手",
-                        effect: { health: 0, sanity: -20, "performance": 10 },
-                        log: "你完成了任务，Par 夸你'有管理者的决断'，但你觉得自己是个混蛋。"
-                    },
-                    {
-                        label: "据理力争，保下她",
-                        effect: { health: 0, sanity: 10, performance: -20 },
-                        log: "你保住了她，但合伙人觉得你'太软弱'，今年的晋升名单上没有你。"
-                    }
-                ]
-            },
-            {
-                id: 111,
-                minLevel: 0,
-                maxLevel: 3,
-                text: "CPA 考试还有一周，但项目上正好要出报告，Manager 让你通宵。",
-                choices: [
-                    {
-                        label: "带书去客户会议室复习",
-                        effect: { health: -10, sanity: -10, performance: -5 },
-                        log: "你两头都没顾好，CPA 挂了一科，底稿也被 Q 了。"
-                    },
-                    {
-                        label: "请假复习（Q Pay）",
-                        effect: { health: 5, sanity: 10, performance: -10 },
-                        log: "Manager 很不爽，但你过了会计和审计！这就够了！"
-                    }
-                ]
-            },
-            {
-                id: 112,
-                minLevel: 4,
-                maxLevel: 8,
-                text: "长期出差导致你的腰椎间盘突出了，医生建议你卧床休息一个月。",
-                choices: [
-                    {
-                        label: "请长病假",
-                        effect: { health: 30, sanity: 10, performance: -30 },
-                        log: "身体恢复了，但回来后发现原本属于你的项目都被别人分走了。"
-                    },
-                    {
-                        label: "买个腰托，站着办公",
-                        effect: { health: -20, sanity: -10, performance: 10 },
-                        log: "你是真正的钢铁战士！Par 都在会上表扬你的敬业精神（虽然他并不会给你加薪）。"
-                    }
-                ]
-            },
-            {
-                id: 113,
-                minLevel: 0,
-                maxLevel: 4,
-                text: "当你准备下班时（晚上 9 点），你的 Laptop 突然蓝屏了，IT 说硬盘坏了，数据可能找不回。",
-                choices: [
-                    {
-                        label: "崩溃大哭",
-                        effect: { health: -5, sanity: -10, performance: 0 },
-                        log: "你哭得太大声，把刚下班的 Par 吓了一跳，他安慰了你两句。"
-                    },
-                    {
-                        label: "淡定地拿出移动硬盘备份",
-                        effect: { health: 0, sanity: 5, performance: 5 },
-                        log: "多亏你有每天备份的好习惯！虽然还是丢了一天的数据，但已经是万幸。"
-                    }
-                ]
-            },
-            {
-                id: 114,
-                minLevel: 5,
-                maxLevel: 8,
-                text: "为了拿下那个大客户，Par 让你去陪客户喝茅台，你不胜酒力。",
-                choices: [
-                    {
-                        label: "舍命陪君子，干了！",
-                        effect: { health: -20, sanity: -5, performance: 15 },
-                        log: "你在厕所吐了一晚，但客户签单了。你的肝在隐隐作痛。"
-                    },
-                    {
-                        label: "偷偷把酒换成水",
-                        effect: { health: 0, sanity: 5, performance: 5 },
-                        log: "你以为自己很聪明，但客户看破没说破，场面一度很尴尬。"
-                    }
-                ]
-            },
-            {
-                id: 115,
-                minLevel: 1,
-                maxLevel: 8,
-                text: "你在茶水间听到两个同事在议论你的八卦，说你是靠关系进来的。",
-                choices: [
-                    {
-                        label: "冲进去对质",
-                        effect: { health: 0, sanity: -10, performance: -5 },
-                        log: "场面很难看，虽然你赢了吵架，但成了全所的笑话。"
-                    },
-                    {
-                        label: "假装接电话路过，吓死她们",
-                        effect: { health: 0, sanity: 10, performance: 0 },
-                        log: "看着她们惊恐的表情，你心理得到了极大的满足。"
-                    }
-                ]
-            }
-        ];
+        // --- INITIALIZATION ---
+        els.startBtn.addEventListener('click', () => {
+            const name = els.userInput.value.trim() || "AUDITOR";
+            gameState.name = name;
+            els.login.style.display = 'none';
+            initGame();
+        });
 
-        // --- UI Elements ---
-        const logElement = document.getElementById('game-log');
-        const controlsElement = document.getElementById('controls');
-        const yearDisplay = document.getElementById('year-display');
-        const quarterDisplay = document.getElementById('quarter-display');
-        const levelDisplay = document.getElementById('level-display');
-        const hpVal = document.getElementById('hp-val');
-        const sanVal = document.getElementById('san-val');
-        const kpiVal = document.getElementById('kpi-val');
-
-        // --- Core Functions ---
-
-        /**
-         * Appends a line of text to the game log.
-         * @param {string} text - The text to display.
-         */
-        function printLog(text) {
-            const p = document.createElement('p');
-            p.textContent = text;
-            logElement.appendChild(p);
-            // Auto-scroll to bottom
-            logElement.scrollTop = logElement.scrollHeight;
-        }
-
-        /**
-         * Updates the status bar with current game state.
-         */
-        function updateUI() {
-            yearDisplay.textContent = `Year ${gameState.year}`;
-            quarterDisplay.textContent = `Q${gameState.quarter}/4`;
-            levelDisplay.textContent = CAREER_LADDER[gameState.levelIndex];
-            hpVal.textContent = gameState.stats.health;
-            sanVal.textContent = gameState.stats.sanity;
-            kpiVal.textContent = gameState.stats.performance;
-        }
-
-        /**
-         * Renders action buttons.
-         * @param {Array<{label: string, action: Function}>} options
-         */
-        function renderButtons(options) {
-            controlsElement.innerHTML = ''; // Clear existing buttons
-            options.forEach(opt => {
-                const btn = document.createElement('button');
-                btn.textContent = opt.label;
-                btn.onclick = () => {
-                    opt.action();
-                };
-                controlsElement.appendChild(btn);
-            });
-        }
-
-        /**
-         * Checks if the game is over based on stats.
-         * @returns {boolean} True if game is over.
-         */
-        function checkGameOver() {
-            let gameOver = false;
-            let message = "";
-
-            if (gameState.stats.health <= 0) {
-                message = "!!! 你因过劳晕倒在工位上，被救护车拉走。游戏结束。";
-                gameOver = true;
-            } else if (gameState.stats.sanity <= 0) {
-                message = "!!! 你精神崩溃了，在办公室大哭一场后递交了辞呈。游戏结束。";
-                gameOver = true;
-            }
-
-            if (gameOver) {
-                printLog(message);
-                renderButtons([{
-                    label: "重新开始",
-                    action: () => location.reload()
-                }]);
-                return true;
-            }
-            return false;
-        }
-
-        // --- Event Logic ---
-
-        /**
-         * Triggers a random event from the gameEvents array.
-         */
-        function triggerEvent() {
-            // Filter events based on current level
-            const availableEvents = gameEvents.filter(event =>
-                gameState.levelIndex >= event.minLevel &&
-                gameState.levelIndex <= event.maxLevel
-            );
-
-            let event;
-            if (availableEvents.length > 0) {
-                const randomIndex = Math.floor(Math.random() * availableEvents.length);
-                event = availableEvents[randomIndex];
-            } else {
-                // Fallback event if no matching events found
-                event = {
-                    text: "这个季度平平无奇，你只是日复一日地处理底稿和回复邮件。",
-                    choices: [
-                        {
-                            label: "按部就班",
-                            effect: { health: 0, sanity: 0, performance: 0 },
-                            log: "时间过得很快，虽然没有波澜，但也算是一种幸运。"
-                        }
-                    ]
-                };
-            }
-
-            printLog("----------------------------------------");
-            printLog(`[Q${gameState.quarter} 随机事件] ${event.text}`);
-
-            // Map choices to button format
-            const buttonOptions = event.choices.map(choice => {
-                return {
-                    label: choice.label,
-                    action: () => handleChoice(choice)
-                };
-            });
-
-            renderButtons(buttonOptions);
-        }
-
-        /**
-         * Handles the player's choice.
-         * @param {Object} choice - The choice object selected.
-         */
-        function handleChoice(choice) {
-            // 1. Update stats
-            if (choice.effect.health) gameState.stats.health += choice.effect.health;
-            if (choice.effect.sanity) gameState.stats.sanity += choice.effect.sanity;
-            if (choice.effect.performance) gameState.stats.performance += choice.effect.performance;
-
-            // 2. Refresh UI immediately
-            updateUI();
-
-            // 3. Log the result
-            printLog(`> ${choice.log}`);
-
-            // Show stat changes
-            let statsLog = [];
-            if (choice.effect.health) statsLog.push(`HP ${choice.effect.health > 0 ? '+' : ''}${choice.effect.health}`);
-            if (choice.effect.sanity) statsLog.push(`SAN ${choice.effect.sanity > 0 ? '+' : ''}${choice.effect.sanity}`);
-            if (choice.effect.performance) statsLog.push(`KPI ${choice.effect.performance > 0 ? '+' : ''}${choice.effect.performance}`);
-            if (statsLog.length > 0) printLog(`(${statsLog.join(', ')})`);
-
-            // 4. Check for Game Over (Health/Sanity)
-            if (checkGameOver()) return;
-
-            // 5. Determine next step (Next Quarter or End of Year)
-            if (gameState.quarter < 4) {
-                renderButtons([
-                    {
-                        label: "进入下一季度",
-                        action: nextQuarter
-                    }
-                ]);
-            } else {
-                 renderButtons([
-                    {
-                        label: "年终总结与评估",
-                        action: endYearAssessment
-                    }
-                ]);
-            }
-        }
-
-        function nextQuarter() {
-            gameState.quarter++;
-            updateUI();
-            triggerEvent();
-        }
-
-        /**
-         * Handles the End of Year Assessment logic.
-         */
-        function endYearAssessment() {
-            printLog("========================================");
-            printLog(`【Year ${gameState.year} 年终评估】`);
-            printLog("HR 和合伙人正在审阅你这一年的表现...");
-
-            // Delay slightly for effect (optional, simulated by text here)
-
-            // 1. Check Win Condition
-            // (Only if we reached Partner, but we usually promote TO partner at the end of the year)
-            // Logic: Check current level or check if promotion leads to Partner.
-            // Let's process promotion first.
-
-            let performance = gameState.stats.performance;
-            let promoted = false;
-            let gameOver = false;
-
-            if (performance < 40) {
-                // Termination
-                printLog(`!!! 你的绩效评分仅为 ${performance} (低于40)。`);
-                printLog("合伙人面色凝重地通知你：由于绩效不达标，你被列入 PIP (绩效改进计划)，并最终被劝退。");
-                printLog("游戏结束。");
-                gameOver = true;
-                renderButtons([{ label: "重新开始", action: () => location.reload() }]);
-                return;
-            } else if (performance > 80) {
-                // Promotion
-                if (gameState.levelIndex < CAREER_LADDER.length - 1) {
-                    gameState.levelIndex++;
-                    promoted = true;
-                    printLog(`*** 恭喜！你的绩效评分高达 ${performance}！`);
-                    printLog(`你成功晋升为：${CAREER_LADDER[gameState.levelIndex]}！`);
-                } else {
-                    // Already Partner? This shouldn't happen usually unless infinite mode.
-                    printLog(`你已经是 ${CAREER_LADDER[gameState.levelIndex]}，独孤求败。`);
-                }
-            } else {
-                // Stay
-                printLog(`你的绩效评分为 ${performance}。表现尚可，但未达到晋升标准。`);
-                printLog(`你将继续保持当前职级：${CAREER_LADDER[gameState.levelIndex]}。`);
-            }
-
-            // Check Win Condition (Partner)
-            if (gameState.levelIndex >= CAREER_LADDER.length - 1) {
-                printLog("****************************************");
-                printLog("恭喜你！你已经攀登到了职业生涯的顶峰——合伙人 (Partner)！");
-                printLog("你不仅生存了下来，还成为了规则的制定者。");
-                printLog("VICTORY - 游戏通关！");
-                printLog("****************************************");
-                renderButtons([{ label: "重新开始", action: () => location.reload() }]);
-                return;
-            }
-
-            // Reset for New Year
+        els.report.btn.addEventListener('click', () => {
+            els.report.screen.style.display = 'none';
+            // Start next year
             gameState.year++;
             gameState.quarter = 1;
             gameState.stats.performance = 50; // Reset KPI
+            gameState.wealthStartOfYear = gameState.stats.wealth; // Track start wealth
+            // Recover stats
+            changeStat('health', 20);
+            changeStat('sanity', 20);
 
-            // Health/Sanity recovery
-            let healthRecovery = 20;
-            let sanityRecovery = 20;
-
-            let oldHealth = gameState.stats.health;
-            gameState.stats.health = Math.min(100, gameState.stats.health + healthRecovery);
-            let healthGain = gameState.stats.health - oldHealth;
-
-            let oldSanity = gameState.stats.sanity;
-            gameState.stats.sanity = Math.min(100, gameState.stats.sanity + sanityRecovery);
-            let sanityGain = gameState.stats.sanity - oldSanity;
-
-            printLog("----------------------------------------");
-            printLog(`新的一年开始了 (Year ${gameState.year})。`);
-            printLog(`经过假期的休整，体力 +${healthGain}，SAN值 +${sanityGain}。`);
-            printLog("绩效评分已重置为 50。准备迎接新的挑战吧。");
-
-            updateUI();
-
-            renderButtons([
-                {
-                    label: `开始 Year ${gameState.year}`,
-                    action: triggerEvent
-                }
-            ]);
-        }
-
-        // --- Initial Game Loop ---
+            typewriter(`\n>>> SYSTEM REBOOT... YEAR ${gameState.year} INITIALIZED.`, 'system');
+            updateHUD();
+            triggerEvent();
+        });
 
         function initGame() {
-            printLog("欢迎来到四大事务所模拟器。");
-            printLog("你是新入职的审计员 (Audit Associate 1)。");
-            printLog("忙季即将开始，请准备好迎接挑战。");
-
-            updateUI();
-
-            renderButtons([
-                {
-                    label: "开始工作",
-                    action: triggerEvent
-                }
-            ]);
+            gameState.wealthStartOfYear = gameState.stats.wealth;
+            updateHUD();
+            typewriter(`>>> WELCOME, ${gameState.name}. SYSTEM ONLINE.`, 'system');
+            typewriter(`>>> TARGET: SURVIVE & ADVANCE TO PARTNER.`, 'system');
+            setTimeout(triggerEvent, 1000);
         }
 
-        // Start the game
-        initGame();
+        // --- CORE LOGIC ---
+
+        function changeStat(key, delta) {
+            gameState.stats[key] += delta;
+
+            // Bounds
+            if (key === 'health') gameState.stats[key] = Math.min(100, Math.max(0, gameState.stats[key]));
+            if (key === 'sanity') gameState.stats[key] = Math.min(100, Math.max(0, gameState.stats[key]));
+            if (key === 'connection') gameState.stats[key] = Math.min(100, Math.max(0, gameState.stats[key]));
+            if (key === 'performance') gameState.stats[key] = Math.min(100, Math.max(0, gameState.stats[key]));
+            // Wealth is unbounded
+        }
+
+        function updateHUD() {
+            els.hud.user.textContent = gameState.name;
+            els.hud.time.textContent = `Y${gameState.year} Q${gameState.quarter}`;
+            els.hud.role.textContent = CAREER_LADDER[gameState.levelIndex];
+
+            // Update Values
+            els.hud.hVal.textContent = gameState.stats.health;
+            els.hud.wVal.textContent = gameState.stats.wealth;
+            els.hud.sVal.textContent = gameState.stats.sanity;
+            els.hud.cVal.textContent = gameState.stats.connection;
+
+            // Update Bars
+            setBar(els.hud.hBar, gameState.stats.health, 100);
+            setBar(els.hud.wBar, gameState.stats.wealth, 5000); // Scale wealth relative to 5000 for visual
+            setBar(els.hud.sBar, gameState.stats.sanity, 100);
+            setBar(els.hud.cBar, gameState.stats.connection, 100);
+        }
+
+        function setBar(el, val, max) {
+            const pct = Math.min(100, Math.max(0, (val / max) * 100));
+            el.style.width = `${pct}%`;
+
+            // Color Logic
+            el.className = 'progress-fill'; // Reset
+            if (pct < 30) el.classList.add('fill-red');
+            else if (pct > 70) el.classList.add('fill-green');
+            else el.classList.add('fill-blue');
+
+            // Wealth override
+            if (el === els.hud.wBar) {
+                 el.className = 'progress-fill fill-gold';
+            }
+        }
+
+        function typewriter(text, type = 'event', callback) {
+            const p = document.createElement('div');
+            p.className = `log-entry ${type} cursor`;
+            els.terminal.appendChild(p);
+
+            let i = 0;
+            const speed = 15; // ms per char
+
+            function typeChar() {
+                if (i < text.length) {
+                    p.textContent += text.charAt(i);
+                    i++;
+                    els.terminal.scrollTop = els.terminal.scrollHeight;
+                    setTimeout(typeChar, speed);
+                } else {
+                    p.classList.remove('cursor');
+                    if (callback) callback();
+                }
+            }
+            typeChar();
+        }
+
+        function checkGameOver() {
+            if (gameState.stats.health <= 0) return "DIAGNOSIS: CRITICAL ORGAN FAILURE. CAREER TERMINATED.";
+            if (gameState.stats.sanity <= 0) return "DIAGNOSIS: PSYCHOTIC BREAK. REMOVED BY SECURITY.";
+            if (gameState.stats.wealth < -500) return "STATUS: BANKRUPT. DEBT COLLECTORS INTERVENED.";
+            return null;
+        }
+
+        function triggerEvent() {
+            // Check Quarter Loop
+            if (gameState.quarter > 4) {
+                showYearEndReport();
+                return;
+            }
+
+            // Distribute Salary
+            const salary = SALARY_TABLE[gameState.levelIndex];
+            changeStat('wealth', salary);
+            updateHUD();
+            typewriter(`[SYSTEM] Q${gameState.quarter} SALARY DISBURSED: +$${salary}`, 'system');
+
+            // Filter Events
+            const validEvents = gameEvents.filter(e =>
+                gameState.levelIndex >= e.min && gameState.levelIndex <= e.max
+            );
+
+            const event = validEvents[Math.floor(Math.random() * validEvents.length)] || validEvents[0];
+
+            setTimeout(() => {
+                typewriter(`>> EVENT [${event.id}]: ${event.text}`, 'event', () => {
+                    renderChoices(event.choices);
+                });
+            }, 500);
+        }
+
+        function renderChoices(choices) {
+            els.controls.innerHTML = '';
+
+            // Sanity Chaos Check
+            const isCrazy = gameState.stats.sanity < 20;
+            if (isCrazy) {
+                typewriter("Warning: Mental Stability Critical. Decisions may be erratic...", "warning");
+            }
+
+            choices.forEach(c => {
+                const btn = document.createElement('button');
+                btn.className = 'control-btn';
+                btn.textContent = c.label;
+                btn.onclick = () => {
+                    els.controls.innerHTML = '';
+
+                    // Chaos Logic: 50% chance to pick random effect
+                    let finalChoice = c;
+                    if (isCrazy && Math.random() < 0.5) {
+                        finalChoice = choices[Math.floor(Math.random() * choices.length)];
+                        typewriter("!!! MENTAL HAZE: You acted irrationally!", "warning");
+                    }
+
+                    handleChoice(finalChoice);
+                };
+                els.controls.appendChild(btn);
+            });
+        }
+
+        function handleChoice(c) {
+            // Apply Effects
+            changeStat('health', c.effect.h);
+            changeStat('sanity', c.effect.s);
+            changeStat('wealth', c.effect.w);
+            changeStat('connection', c.effect.c);
+            changeStat('performance', c.effect.p);
+
+            updateHUD();
+
+            typewriter(`> ${c.log}`);
+
+            // Log changes
+            let diff = [];
+            if(c.effect.h) diff.push(`HLT ${c.effect.h}`);
+            if(c.effect.s) diff.push(`SAN ${c.effect.s}`);
+            if(c.effect.w) diff.push(`$$$ ${c.effect.w}`);
+            if(c.effect.c) diff.push(`CON ${c.effect.c}`);
+            if(diff.length) typewriter(`[EFFECT] ${diff.join(' | ')}`, 'system');
+
+            // Check Game Over
+            const deathMsg = checkGameOver();
+            if (deathMsg) {
+                typewriter(deathMsg, 'warning');
+                const btn = document.createElement('button');
+                btn.className = 'control-btn';
+                btn.textContent = "SYSTEM RESTART";
+                btn.onclick = () => location.reload();
+                els.controls.appendChild(btn);
+                return;
+            }
+
+            // Next
+            setTimeout(() => {
+                const btn = document.createElement('button');
+                btn.className = 'control-btn';
+                btn.textContent = "PROCEED TO NEXT QUARTER";
+                btn.onclick = () => {
+                    els.controls.innerHTML = '';
+                    gameState.quarter++;
+                    triggerEvent();
+                };
+                els.controls.appendChild(btn);
+            }, 1000);
+        }
+
+        function showYearEndReport() {
+            // Generate Report
+            const p = gameState.stats.performance;
+            let result = "";
+            let promoted = false;
+
+            if (p < 40) {
+                result = "TERMINATED (PIP)";
+            } else if (p > 80) {
+                // Connection Check for Partner
+                const isPartnerTry = gameState.levelIndex === CAREER_LADDER.length - 2; // SM -> Par
+                if (isPartnerTry && gameState.stats.connection < 80) {
+                    result = "PROMOTION REJECTED (INSUFFICIENT CONNECTION)";
+                } else {
+                    if (gameState.levelIndex < CAREER_LADDER.length - 1) {
+                        gameState.levelIndex++;
+                        promoted = true;
+                        result = `PROMOTED TO ${CAREER_LADDER[gameState.levelIndex]}`;
+                    } else {
+                        result = "ALREADY AT SUMMIT";
+                    }
+                }
+            } else {
+                result = "RETAINED IN CURRENT GRADE";
+            }
+
+            if (result.includes("TERMINATED")) {
+                 typewriter("CAREER TERMINATED DURING REVIEW. GAME OVER.", 'warning');
+                 const btn = document.createElement('button');
+                 btn.className = 'control-btn';
+                 btn.textContent = "SYSTEM RESTART";
+                 btn.onclick = () => location.reload();
+                 els.controls.innerHTML = '';
+                 els.controls.appendChild(btn);
+                 return;
+            }
+
+            // Win Check
+            if (gameState.levelIndex === CAREER_LADDER.length - 1) {
+                 typewriter("MISSION ACCOMPLISHED: PARTNER STATUS ACHIEVED.", 'success');
+                 typewriter("YOU HAVE WON THE GAME OF SURVIVAL.", 'success');
+                 const btn = document.createElement('button');
+                 btn.className = 'control-btn';
+                 btn.textContent = "SYSTEM RESTART";
+                 btn.onclick = () => location.reload();
+                 els.controls.innerHTML = '';
+                 els.controls.appendChild(btn);
+                 return;
+            }
+
+            const wealthChange = gameState.stats.wealth - gameState.wealthStartOfYear;
+            const sign = wealthChange >= 0 ? '+' : '';
+            const wealthClass = wealthChange >= 0 ? 'val-gain' : 'val-loss';
+
+            els.report.content.innerHTML = `
+                <div class="report-section">
+                    <div class="report-label">ANNUAL PERFORMANCE (KPI)</div>
+                    <div class="report-value ${p > 80 ? 'val-gain' : 'val-loss'}">${p} / 100</div>
+                </div>
+                <div class="report-section">
+                    <div class="report-label">ANNUAL FINANCIAL INCREMENT</div>
+                    <div class="report-value ${wealthClass}">${sign}$${wealthChange}</div>
+                </div>
+                <div class="report-section">
+                    <div class="report-label">DECISION</div>
+                    <div class="report-value" style="color:#fff; border:1px solid #fff; padding:10px;">${result}</div>
+                </div>
+            `;
+
+            els.report.screen.style.display = 'flex';
+        }
 
     </script>
 </body>
