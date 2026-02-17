@@ -155,6 +155,63 @@
             }
         };
 
+        // --- Game Data ---
+        const gameEvents = [
+            {
+                id: 1,
+                text: "【凌晨加班】凌晨 2 点，手机突然震动。Manager 发来了 Review Note，并留言：“这些问题很急，明早 8 点前我要看到修改后的版本。”",
+                choices: [
+                    {
+                        label: "立刻通宵修改",
+                        effect: { health: -15, sanity: -5, performance: 10 },
+                        log: "你灌了一杯浓缩咖啡，通宵达旦地改完了所有问题。Manager 很满意，但你的心脏隐隐作痛。"
+                    },
+                    {
+                        label: "假装睡着没看见",
+                        effect: { health: 5, sanity: 5, performance: -15 },
+                        log: "你把手机关机，倒头就睡。第二天早上被 Manager 当众痛批，KPI 受到重创，但你精神饱满。"
+                    },
+                    {
+                        label: "只改关键点，其他的糊弄一下",
+                        effect: { health: -5, sanity: -2, performance: 0 },
+                        log: "你花了一小时改了重点。Manager 觉得你态度一般，但也没说什么，勉強过关。"
+                    }
+                ]
+            },
+            {
+                id: 2,
+                text: "【抽凭噩梦】你在抽查凭证时发现，客户提供的发票不仅编号不连续，仔细一看，甚至有几张是明显的假发票。",
+                choices: [
+                    {
+                        label: "立刻上报 Senior",
+                        effect: { health: 0, sanity: -5, performance: 5 },
+                        log: "你如实汇报了情况。Senior 叹了口气，让你继续扩大抽样范围。工作量增加了（SAN值下降），但你遵守了职业道德（KPI上升）。"
+                    },
+                    {
+                        label: "多一事不如少一事，睁只眼闭只眼",
+                        effect: { health: 0, sanity: 5, performance: -20 },
+                        log: "你假装没看见，通过了测试。心里虽然轻松了，但这埋下了一颗不知何时会爆炸的雷（KPI大幅下降）。"
+                    }
+                ]
+            },
+            {
+                id: 3,
+                text: "【盘点苦差】项目经理在群里问：“谁愿意去那个位于偏远山区的养猪场盘点？路途遥远，环境极其恶劣，但有额外差补。”",
+                choices: [
+                    {
+                        label: "主动请缨",
+                        effect: { health: -20, sanity: -10, performance: 15 },
+                        log: "你举手去了。在猪圈里数了一天猪，浑身恶臭，累得半死，但赢得了经理的赏识（KPI大幅上升）。"
+                    },
+                    {
+                        label: "保持沉默",
+                        effect: { health: 0, sanity: 0, performance: -5 },
+                        log: "你低头看电脑，假装没看到消息。最后另一个倒霉蛋去了，经理对你毫无印象（KPI微降）。"
+                    }
+                ]
+            }
+        ];
+
         // --- UI Elements ---
         const logElement = document.getElementById('game-log');
         const controlsElement = document.getElementById('controls');
@@ -205,7 +262,97 @@
             });
         }
 
-        // --- Initial Game Loop / Test ---
+        /**
+         * Checks if the game is over based on stats.
+         * @returns {boolean} True if game is over.
+         */
+        function checkGameOver() {
+            let gameOver = false;
+            let message = "";
+
+            if (gameState.stats.health <= 0) {
+                message = "!!! 你因过劳晕倒在工位上，被救护车拉走。游戏结束。";
+                gameOver = true;
+            } else if (gameState.stats.sanity <= 0) {
+                message = "!!! 你精神崩溃了，在办公室大哭一场后递交了辞呈。游戏结束。";
+                gameOver = true;
+            }
+
+            if (gameOver) {
+                printLog(message);
+                renderButtons([{
+                    label: "重新开始",
+                    action: () => location.reload()
+                }]);
+                return true;
+            }
+            return false;
+        }
+
+        // --- Event Logic ---
+
+        /**
+         * Triggers a random event from the gameEvents array.
+         */
+        function triggerEvent() {
+            // Randomly select an event
+            const randomIndex = Math.floor(Math.random() * gameEvents.length);
+            const event = gameEvents[randomIndex];
+
+            printLog("----------------------------------------");
+            printLog(`[随机事件] ${event.text}`);
+
+            // Map choices to button format
+            const buttonOptions = event.choices.map(choice => {
+                return {
+                    label: choice.label,
+                    action: () => handleChoice(choice)
+                };
+            });
+
+            renderButtons(buttonOptions);
+        }
+
+        /**
+         * Handles the player's choice.
+         * @param {Object} choice - The choice object selected.
+         */
+        function handleChoice(choice) {
+            // 1. Update stats
+            if (choice.effect.health) gameState.stats.health += choice.effect.health;
+            if (choice.effect.sanity) gameState.stats.sanity += choice.effect.sanity;
+            if (choice.effect.performance) gameState.stats.performance += choice.effect.performance;
+
+            // 2. Refresh UI immediately
+            updateUI();
+
+            // 3. Log the result
+            printLog(`> ${choice.log}`);
+
+            // Show stat changes
+            let statsLog = [];
+            if (choice.effect.health) statsLog.push(`HP ${choice.effect.health > 0 ? '+' : ''}${choice.effect.health}`);
+            if (choice.effect.sanity) statsLog.push(`SAN ${choice.effect.sanity > 0 ? '+' : ''}${choice.effect.sanity}`);
+            if (choice.effect.performance) statsLog.push(`KPI ${choice.effect.performance > 0 ? '+' : ''}${choice.effect.performance}`);
+            if (statsLog.length > 0) printLog(`(${statsLog.join(', ')})`);
+
+            // 4. Check for Game Over
+            if (checkGameOver()) return;
+
+            // 5. Show "Next Week" button
+            renderButtons([
+                {
+                    label: "下一周 / 继续",
+                    action: () => {
+                        // In a real game, we might increment year/week here
+                        // For now, just trigger next event
+                        triggerEvent();
+                    }
+                }
+            ]);
+        }
+
+        // --- Initial Game Loop ---
 
         function initGame() {
             printLog("欢迎来到四大事务所模拟器。");
@@ -216,36 +363,10 @@
 
             renderButtons([
                 {
-                    label: "开始工作 (消耗体力)",
-                    action: () => {
-                        gameState.stats.health -= 10;
-                        gameState.stats.performance += 5;
-                        printLog("> 你努力工作了一整天。体力 -10，绩效 +5。");
-                        checkGameState();
-                        updateUI();
-                    }
-                },
-                {
-                    label: "摸鱼休息 (恢复SAN值)",
-                    action: () => {
-                        gameState.stats.sanity += 5;
-                        gameState.stats.performance -= 2;
-                        printLog("> 你躲在厕所刷了一会儿手机。SAN值 +5，绩效 -2。");
-                        checkGameState();
-                        updateUI();
-                    }
+                    label: "开始工作",
+                    action: triggerEvent
                 }
             ]);
-        }
-
-        function checkGameState() {
-            if (gameState.stats.health <= 0) {
-                printLog("!!! 你因过劳晕倒在工位上。游戏结束。");
-                renderButtons([{label: "重新开始", action: () => location.reload()}]);
-            } else if (gameState.stats.sanity <= 0) {
-                printLog("!!! 你精神崩溃了，递交了辞呈。游戏结束。");
-                renderButtons([{label: "重新开始", action: () => location.reload()}]);
-            }
         }
 
         // Start the game
