@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Big 4 Survival</title>
+    <style>
+        /* Minimalist Dark Mode Theme */
+        :root {
+            --bg-color: #000000;
+            --text-color: #ffffff;
+            --accent-color: #333333;
+            --border-color: #ffffff;
+            --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-main);
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Prevent body scroll, handle inside main */
+        }
+
+        /* Header: Status Bar */
+        #status-bar {
+            padding: 15px;
+            border-bottom: 2px solid var(--border-color);
+            background-color: var(--bg-color);
+            z-index: 10;
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 1rem;
+            font-weight: bold;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        /* Main: Game Log */
+        #game-log {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        #game-log p {
+            margin-bottom: 12px;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Footer: Controls */
+        #controls {
+            padding: 20px;
+            border-top: 2px solid var(--border-color);
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            gap: 15px; /* Spacing between buttons */
+        }
+
+        button {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            border: 2px solid var(--border-color);
+            padding: 18px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%; /* Full width for easy tapping */
+            transition: background-color 0.2s, color 0.2s;
+            text-align: center;
+        }
+
+        button:active {
+            background-color: var(--text-color);
+            color: var(--bg-color);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            border-color: #555;
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-color);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 4px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header id="status-bar">
+        <div class="status-row">
+            <span id="year-display">Year 1</span>
+            <span id="level-display">Audit Associate 1</span>
+        </div>
+        <div class="stats-row">
+            <span>HP: <span id="hp-val">100</span></span>
+            <span>SAN: <span id="san-val">100</span></span>
+            <span>KPI: <span id="kpi-val">50</span></span>
+        </div>
+    </header>
+
+    <main id="game-log">
+        <!-- Text will be appended here -->
+    </main>
+
+    <footer id="controls">
+        <!-- Buttons will be injected here -->
+    </footer>
+
+    <script>
+        // --- Game State ---
+        const gameState = {
+            year: 1,
+            level: "Audit Associate 1",
+            stats: {
+                health: 100,
+                sanity: 100,
+                performance: 50
+            }
+        };
+
+        // --- UI Elements ---
+        const logElement = document.getElementById('game-log');
+        const controlsElement = document.getElementById('controls');
+        const yearDisplay = document.getElementById('year-display');
+        const levelDisplay = document.getElementById('level-display');
+        const hpVal = document.getElementById('hp-val');
+        const sanVal = document.getElementById('san-val');
+        const kpiVal = document.getElementById('kpi-val');
+
+        // --- Core Functions ---
+
+        /**
+         * Appends a line of text to the game log.
+         * @param {string} text - The text to display.
+         */
+        function printLog(text) {
+            const p = document.createElement('p');
+            p.textContent = text;
+            logElement.appendChild(p);
+            // Auto-scroll to bottom
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        /**
+         * Updates the status bar with current game state.
+         */
+        function updateUI() {
+            yearDisplay.textContent = `Year ${gameState.year}`;
+            levelDisplay.textContent = gameState.level;
+            hpVal.textContent = gameState.stats.health;
+            sanVal.textContent = gameState.stats.sanity;
+            kpiVal.textContent = gameState.stats.performance;
+        }
+
+        /**
+         * Renders action buttons.
+         * @param {Array<{label: string, action: Function}>} options
+         */
+        function renderButtons(options) {
+            controlsElement.innerHTML = ''; // Clear existing buttons
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.textContent = opt.label;
+                btn.onclick = () => {
+                    opt.action();
+                };
+                controlsElement.appendChild(btn);
+            });
+        }
+
+        // --- Initial Game Loop / Test ---
+
+        function initGame() {
+            printLog("欢迎来到四大事务所模拟器。");
+            printLog("你是新入职的审计员 (Audit Associate 1)。");
+            printLog("忙季即将开始，请准备好迎接挑战。");
+
+            updateUI();
+
+            renderButtons([
+                {
+                    label: "开始工作 (消耗体力)",
+                    action: () => {
+                        gameState.stats.health -= 10;
+                        gameState.stats.performance += 5;
+                        printLog("> 你努力工作了一整天。体力 -10，绩效 +5。");
+                        checkGameState();
+                        updateUI();
+                    }
+                },
+                {
+                    label: "摸鱼休息 (恢复SAN值)",
+                    action: () => {
+                        gameState.stats.sanity += 5;
+                        gameState.stats.performance -= 2;
+                        printLog("> 你躲在厕所刷了一会儿手机。SAN值 +5，绩效 -2。");
+                        checkGameState();
+                        updateUI();
+                    }
+                }
+            ]);
+        }
+
+        function checkGameState() {
+            if (gameState.stats.health <= 0) {
+                printLog("!!! 你因过劳晕倒在工位上。游戏结束。");
+                renderButtons([{label: "重新开始", action: () => location.reload()}]);
+            } else if (gameState.stats.sanity <= 0) {
+                printLog("!!! 你精神崩溃了，递交了辞呈。游戏结束。");
+                renderButtons([{label: "重新开始", action: () => location.reload()}]);
+            }
+        }
+
+        // Start the game
+        initGame();
+
+    </script>
+</body>
+</html>
