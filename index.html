@@ -22,6 +22,7 @@
             --accent-green: #34C759;
             --accent-red: #FF3B30;
             --accent-orange: #FF9500;
+            --accent-purple: #AF52DE;
             --gray-light: #F2F2F7;
             --gray-med: #8E8E93;
             --shadow-soft: 0 8px 30px rgba(0,0,0,0.08);
@@ -59,7 +60,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
         }
 
         .user-info {
@@ -68,12 +69,25 @@
             align-items: flex-start;
         }
 
+        .user-name-row {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
         .user-name {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 800;
             color: #1D1D1F;
             letter-spacing: -0.5px;
-            margin-bottom: 2px;
+        }
+
+        .rank-badge {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--accent-blue);
+            text-transform: uppercase;
         }
 
         .game-time {
@@ -84,24 +98,26 @@
             letter-spacing: 0.5px;
         }
 
-        .rank-tag {
-            background: #E5E5EA;
-            color: #1D1D1F;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 700;
-            text-transform: uppercase;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-
+        /* 5-Column Stats Grid */
         .stats-grid {
-            display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
             margin-top: 12px;
         }
 
+        /* Mobile adjustment: if too narrow, wrap?
+           Actually, 5 columns might fit on most phones if text is small.
+           Alternatively, make it scrollable or 3+2. Let's try flexible wrapping.
+        */
+        @media (max-width: 360px) {
+            .stats-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
         .stat-item { display: flex; flex-direction: column; align-items: center; }
-        .stat-label { font-size: 10px; color: var(--gray-med); font-weight: 600; margin-bottom: 4px; text-transform: uppercase; }
+        .stat-label { font-size: 10px; color: var(--gray-med); font-weight: 600; margin-bottom: 4px; text-transform: uppercase; white-space: nowrap; }
         .stat-bar-bg { width: 100%; height: 6px; background: #E5E5EA; border-radius: 3px; overflow: hidden; }
         .stat-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
 
@@ -109,6 +125,7 @@
         .fill-money { background: var(--accent-orange); }
         .fill-stress { background: var(--accent-red); }
         .fill-conn { background: var(--accent-blue); }
+        .fill-perf { background: var(--accent-purple); }
 
         /* MIDDLE: Story Card */
         #main-area {
@@ -282,20 +299,22 @@
     <div id="top-bar">
         <div class="badge-header">
             <div class="user-info">
-                <div class="user-name" id="disp-name">Guest</div>
-                <div class="game-time" id="disp-time">入职时间：第 1 年 Q1</div>
+                <div class="user-name-row">
+                    <div class="user-name" id="disp-name">Guest</div>
+                    <div class="rank-badge" id="disp-rank">A1</div>
+                </div>
+                <div class="game-time" id="disp-time">第 1 年 Q1</div>
             </div>
-            <div class="rank-tag" id="disp-rank">Audit Associate 1</div>
         </div>
 
         <div class="stats-grid">
             <div class="stat-item">
-                <div class="stat-label">精力</div>
-                <div class="stat-bar-bg"><div class="stat-bar-fill fill-energy" id="bar-energy" style="width:100%"></div></div>
+                <div class="stat-label" style="color:var(--accent-purple)">绩效</div>
+                <div class="stat-bar-bg"><div class="stat-bar-fill fill-perf" id="bar-perf" style="width:50%"></div></div>
             </div>
             <div class="stat-item">
-                <div class="stat-label">财富</div>
-                <div class="stat-bar-bg"><div class="stat-bar-fill fill-money" id="bar-money" style="width:10%"></div></div>
+                <div class="stat-label">精力</div>
+                <div class="stat-bar-bg"><div class="stat-bar-fill fill-energy" id="bar-energy" style="width:100%"></div></div>
             </div>
             <div class="stat-item">
                 <div class="stat-label">压力</div>
@@ -304,6 +323,10 @@
             <div class="stat-item">
                 <div class="stat-label">人脉</div>
                 <div class="stat-bar-bg"><div class="stat-bar-fill fill-conn" id="bar-conn" style="width:0%"></div></div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">财富</div>
+                <div class="stat-bar-bg"><div class="stat-bar-fill fill-money" id="bar-money" style="width:10%"></div></div>
             </div>
         </div>
     </div>
@@ -319,7 +342,7 @@
                 <div class="decision-opt" onclick="toggleOption(0)">
                     <div class="opt-icon">🐟</div>
                     <div class="opt-name">疯狂摸鱼</div>
-                    <div class="opt-desc">精力++, 绩效--</div>
+                    <div class="opt-desc">精力++, 绩效-</div>
                 </div>
                 <div class="decision-opt" onclick="toggleOption(1)">
                     <div class="opt-icon">🔥</div>
@@ -329,7 +352,7 @@
                 <div class="decision-opt" onclick="toggleOption(2)">
                     <div class="opt-icon">💼</div>
                     <div class="opt-name">向上管理</div>
-                    <div class="opt-desc">精力-, 人脉++</div>
+                    <div class="opt-desc">精力-, 绩效+</div>
                 </div>
                 <div class="decision-opt" onclick="toggleOption(3)">
                     <div class="opt-icon">📚</div>
@@ -367,9 +390,9 @@
         };
 
         const ACTIONS = [
-            { name: "疯狂摸鱼", effect: { e: 20, m: 0, s: -5, c: 0, p: -15 }, text: "你找了个角落刷了一下午手机。电量满了，绩效红了。" },
-            { name: "玩命干活", effect: { e: -25, m: 0, s: 10, c: 0, p: 25 }, text: "你开启了 Focus 模式，清空了待办事项。发际线隐隐作痛。" },
-            { name: "向上管理", effect: { e: -10, m: -0.1, s: 5, c: 15, p: 5 }, text: "你给 Partner 买了杯咖啡，并夸他的领带很有品味。" },
+            { name: "疯狂摸鱼", effect: { e: 20, m: 0, s: -5, c: 0, p: -10 }, text: "你找了个角落刷了一下午手机。电量满了，绩效红了。" },
+            { name: "玩命干活", effect: { e: -20, m: 0, s: 10, c: 0, p: 15 }, text: "你开启了 Focus 模式，清空了待办事项。发际线隐隐作痛。" },
+            { name: "向上管理", effect: { e: -5, m: -0.1, s: 5, c: 5, p: 5 }, text: "你给 Partner 买了杯咖啡，并夸他的领带很有品味。" },
             { name: "考证学习", effect: { e: -20, m: 0, s: 10, c: 0, p: 5 }, promo: 10, text: "你在地铁上背了 50 个单词。离 CPA 又近了一步。" },
             { name: "社交八卦", effect: { e: -5, m: -0.2, s: -15, c: 10, p: 0 }, text: "你在茶水间听到了惊天大瓜。心情愉悦，钱包缩水。" },
             { name: "带薪冥想", effect: { e: 5, m: 0, s: -25, c: 0, p: 0 }, text: "你在厕所隔间闭目养神了 20 分钟。心态稳了。" }
@@ -444,7 +467,8 @@
                 energy: document.getElementById('bar-energy'),
                 money: document.getElementById('bar-money'),
                 stress: document.getElementById('bar-stress'),
-                conn: document.getElementById('bar-conn')
+                conn: document.getElementById('bar-conn'),
+                perf: document.getElementById('bar-perf')
             },
 
             cardContent: document.getElementById('card-content'),
@@ -466,8 +490,7 @@
         };
 
         function initGame() {
-            renderStats(); // This will update the name in the header
-            // Start Q1 logic
+            renderStats();
             startQuarter();
         }
 
@@ -641,8 +664,8 @@
         function formatDiff(eff) {
             if(!eff) return "";
             let parts = [];
-            // Order: E, M, S, C, P
-            ['e', 'm', 's', 'c', 'p'].forEach(k => {
+            // Order: P, E, M, S, C (Perf first as requested priority?) - No specific order but Perf is new.
+            ['p', 'e', 'm', 's', 'c'].forEach(k => {
                 if(eff[k]) {
                     const val = eff[k];
                     const label = STAT_MAP[k];
@@ -678,19 +701,17 @@
             ui.bars.money.style.width = Math.min(100, (state.stats.money/100)*100) + '%';
             ui.bars.stress.style.width = state.stats.stress + '%';
             ui.bars.conn.style.width = state.stats.conn + '%';
+            ui.bars.perf.style.width = state.stats.perf + '%';
 
             // Header Update
             ui.dispName.textContent = state.name;
-            ui.dispTime.textContent = `入职时间：第 ${state.year} 年 Q${state.quarter}`;
+            ui.dispTime.textContent = `第 ${state.year} 年 Q${state.quarter}`;
             ui.dispRank.textContent = RANKS[state.rankIdx];
         }
 
         async function typeBlock(title, text, metaHtml) {
             const div = document.createElement('div');
             div.className = 'text-block';
-            // Insert metaHtml directly at the end of the text span? No, separate logic requested.
-            // Requirement: "In the text... highlight... e.g. (Energy +10...)"
-            // I will append it to the content-span after typing is done.
             div.innerHTML = `<div class="text-sys">${title}</div><div class="content-span"></div>`;
             ui.cardContent.appendChild(div);
 
@@ -712,60 +733,103 @@
             span.classList.remove('type-cursor');
         }
 
-        // --- 7. YEAR END ---
+        // --- 7. YEAR END & PROMOTION ---
         function doYearEnd() {
             ui.modal.classList.remove('hidden');
             ui.loginBox.classList.add('hidden');
             ui.yeBox.classList.remove('hidden');
 
             const s = state.stats;
-            let promo = false;
+            const idx = state.rankIdx;
+
+            let resultType = "STAY"; // STAY, PROMO, FIRE
             let msg = "";
 
-            // Promo Logic
-            let chance = state.promoChance + (s.perf > 80 ? 30 : 0);
-            if(s.perf < 40) chance = -100; // PIP
-
-            const roll = Math.random() * 100;
-            if(chance > 0 && roll < chance) {
-                if(state.rankIdx < RANKS.length - 1) {
-                    state.rankIdx++;
-                    promo = true;
-                    msg = `表现优异！你晋升为 ${RANKS[state.rankIdx]}！`;
+            // 1. PIP Logic (Priority High)
+            if (s.perf < 30) {
+                resultType = "FIRE";
+                msg = `你的绩效仅为 ${s.perf} 分，远低于标准。HR 找你谈话了，建议你拿 N+1 走人。`;
+            } else {
+                // 2. Promotion Logic
+                if (idx < 5) {
+                    // A1(0) -> S3(4). Needs Perf > 80
+                    if (s.perf > 80) {
+                        resultType = "PROMO";
+                        msg = `你的绩效高达 ${s.perf} 分，表现优异，获得晋升！`;
+                    } else {
+                        msg = `你的绩效为 ${s.perf} 分。表现尚可，但未达到卓越标准 (80+)，今年原地踏步。`;
+                    }
+                } else if (idx >= 5 && idx < 7) {
+                    // M1(5) -> M2(6) -> SM(7). Manager Phase. Needs Perf > 80 AND Conn > 60
+                    if (s.perf > 80 && s.conn > 60) {
+                        resultType = "PROMO";
+                        msg = `作为 Manager，你绩效出色 (${s.perf}) 且人脉广泛 (${s.conn})，成功晋升！`;
+                    } else {
+                        msg = `你的绩效 (${s.perf}) 或人脉 (${s.conn}) 未达标 (需 P>80, C>60)。作为管理层，光干活是不够的。`;
+                    }
+                } else if (idx === 7) {
+                    // SM(7) -> Partner(8). Needs Conn > 90 AND Stress < 50
+                    // Note: User said Sanity > 50. My internal var is Stress. So Stress < 50.
+                    if (s.conn > 90 && s.stress < 50) {
+                        resultType = "PROMO";
+                        msg = `你拥有顶级的客户资源 (人脉 ${s.conn}) 和强大的心理素质 (压力 ${s.stress})。恭喜成为合伙人！`;
+                    } else {
+                        msg = `合伙人门槛极高。你需要极强的人脉 (>90) 和强大的抗压能力 (压力 < 50)。目前: C${s.conn}, S${s.stress}。`;
+                    }
                 } else {
-                    msg = "你已经是合伙人了！Firm 是你的了！";
+                    // Already Partner
+                    msg = "你已经是 Firm 的主人了。享受分红吧。";
                 }
-            } else {
-                if(s.perf < 40) msg = "绩效太差，被 Counseled out。Game Over。";
-                else msg = "今年表现平平，未能晋升。";
             }
 
-            if(msg.includes("Game Over")) {
-                document.getElementById('ye-title').textContent = "YOU ARE FIRED";
-                document.getElementById('ye-content').textContent = msg;
-                document.getElementById('btn-next-year').textContent = "Restart";
-                document.getElementById('btn-next-year').onclick = () => location.reload();
-            } else {
-                document.getElementById('ye-title').textContent = `第 ${state.year} 年总结`;
-                document.getElementById('ye-content').innerHTML = `
-                    <p>${msg}</p>
-                    <hr>
-                    <p>总资产: ${s.money}万</p>
-                    <p>状态恢复: 精力回满, 压力 -20</p>
-                `;
-                document.getElementById('btn-next-year').onclick = () => {
-                    // Reset for next year
-                    state.year++;
-                    state.quarter = 1;
-                    state.promoChance = 0;
-                    state.stats.energy = 100;
-                    state.stats.stress = Math.max(0, state.stats.stress - 20);
-                    state.stats.perf = 50; // Reset Perf
+            // Render
+            let title = "年终评估";
+            let btnText = "开启下一年";
+            let onBtn = null;
 
-                    ui.modal.classList.add('hidden');
-                    startQuarter();
-                };
+            if (resultType === "FIRE") {
+                title = "BAD ENDING: 被劝退";
+                btnText = "Game Over (重开)";
+                onBtn = () => location.reload();
+            } else if (resultType === "PROMO") {
+                if (state.rankIdx === 7) { // Promoting to Partner
+                    title = "VICTORY: 荣升合伙人";
+                    btnText = "Game Over (胜利)";
+                    onBtn = () => location.reload();
+                    state.rankIdx++; // Apply just for display if we continued
+                } else {
+                    title = "CONGRATULATIONS: 晋升";
+                    state.rankIdx++;
+                }
             }
+
+            document.getElementById('ye-title').textContent = title;
+            document.getElementById('ye-content').innerHTML = `
+                <p>${msg}</p>
+                <hr>
+                <div style="font-size:12px; color:#666;">
+                    <p>绩效评分: ${s.perf}</p>
+                    <p>人脉指数: ${s.conn}</p>
+                    <p>心理压力: ${s.stress}</p>
+                    <p>累积财富: ${s.money}万</p>
+                </div>
+            `;
+
+            document.getElementById('btn-next-year').textContent = btnText;
+            document.getElementById('btn-next-year').onclick = onBtn || (() => {
+                // Reset for next year
+                state.year++;
+                state.quarter = 1;
+                state.promoChance = 0;
+
+                // Reset/Recover Stats
+                state.stats.energy = 100; // Full recover
+                state.stats.stress = Math.max(0, state.stats.stress - 20); // Recover some stress
+                state.stats.perf = 50; // Reset Perf for new year
+
+                ui.modal.classList.add('hidden');
+                startQuarter();
+            });
         }
 
         // Utils
