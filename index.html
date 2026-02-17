@@ -171,41 +171,87 @@
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* DECISION GRID (Inside Card when active) */
-        #decision-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: repeat(3, 1fr);
-            gap: 12px;
-            padding: 20px;
-            height: 100%;
-            overflow-y: auto;
-        }
-
-        .decision-opt {
-            background: var(--bg-color);
-            border: 2px solid transparent;
-            border-radius: 16px;
-            padding: 16px;
+        /* ACTION LIST (Inside Card when active) */
+        #action-list-container {
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            height: 100%;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .ap-header {
+            display: flex;
+            justify-content: space-between;
             align-items: center;
-            text-align: center;
-            cursor: pointer;
+            margin-bottom: 16px;
+            font-size: 16px;
+            font-weight: 700;
+            color: #1D1D1F;
+            position: sticky;
+            top: 0;
+            background: var(--card-bg);
+            padding-bottom: 10px;
+            border-bottom: 1px solid #E5E5EA;
+            z-index: 5;
+        }
+
+        .ap-display {
+            background: #E8F2FF;
+            color: var(--accent-blue);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 14px;
+        }
+
+        .action-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-color);
+            border-radius: 16px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            border: 2px solid transparent;
             transition: all 0.2s;
+        }
+
+        .action-row.active {
+            border-color: var(--accent-blue);
+            background: #F2F8FF;
+        }
+
+        .act-info { flex: 1; margin-right: 12px; }
+        .act-name { font-weight: 700; font-size: 15px; margin-bottom: 2px; }
+        .act-desc { font-size: 11px; color: var(--gray-med); }
+
+        .stepper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #fff;
+            padding: 4px;
+            border-radius: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .step-btn {
+            width: 32px; height: 32px;
+            border-radius: 16px;
+            border: none;
+            background: #F2F2F7;
+            color: #1D1D1F;
+            font-weight: 700;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex; justify-content: center; align-items: center;
             touch-action: manipulation;
         }
+        .step-btn:active { background: #E5E5EA; transform: scale(0.95); }
+        .step-btn:disabled { color: #C7C7CC; cursor: not-allowed; }
 
-        .decision-opt.selected {
-            background: #E8F2FF;
-            border-color: var(--accent-blue);
-            color: var(--accent-blue);
-        }
+        .step-val { font-weight: 700; font-size: 16px; min-width: 20px; text-align: center; }
 
-        .opt-icon { font-size: 24px; margin-bottom: 8px; }
-        .opt-name { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
-        .opt-desc { font-size: 11px; color: var(--gray-med); line-height: 1.3; }
 
         /* BOTTOM: Actions */
         #bottom-bar {
@@ -332,38 +378,14 @@
             <!-- Content injected here -->
             <div id="card-content"></div>
 
-            <!-- Decision Grid (Overlay or Replacement) -->
-            <div id="decision-grid" class="hidden">
-                <!-- 6 Options -->
-                <div class="decision-opt" onclick="toggleOption(0)">
-                    <div class="opt-icon">🐟</div>
-                    <div class="opt-name">疯狂摸鱼</div>
-                    <div class="opt-desc">精力++, 绩效-</div>
+            <!-- AP Action List (Overlay or Replacement) -->
+            <div id="action-list-container" class="hidden">
+                <div class="ap-header">
+                    <span>行动分配</span>
+                    <span class="ap-display" id="ap-count">AP: 10 / 10</span>
                 </div>
-                <div class="decision-opt" onclick="toggleOption(1)">
-                    <div class="opt-icon">🔥</div>
-                    <div class="opt-name">玩命干活</div>
-                    <div class="opt-desc">精力--, 绩效++</div>
-                </div>
-                <div class="decision-opt" onclick="toggleOption(2)">
-                    <div class="opt-icon">💼</div>
-                    <div class="opt-name">向上管理</div>
-                    <div class="opt-desc">精力-, 绩效+</div>
-                </div>
-                <div class="decision-opt" onclick="toggleOption(3)">
-                    <div class="opt-icon">📚</div>
-                    <div class="opt-name">考证学习</div>
-                    <div class="opt-desc">精力-, 晋升%</div>
-                </div>
-                <div class="decision-opt" onclick="toggleOption(4)">
-                    <div class="opt-icon">☕</div>
-                    <div class="opt-name">社交八卦</div>
-                    <div class="opt-desc">压力-, 人脉+</div>
-                </div>
-                <div class="decision-opt" onclick="toggleOption(5)">
-                    <div class="opt-icon">🧘</div>
-                    <div class="opt-name">带薪冥想</div>
-                    <div class="opt-desc">压力--</div>
+                <div id="actions-list">
+                    <!-- Actions injected here -->
                 </div>
             </div>
         </div>
@@ -385,19 +407,38 @@
             e: '精力', m: '财富', s: '压力', c: '人脉', p: '绩效', promo: '晋升概率'
         };
 
-        const ACTIONS = [
-            { name: "疯狂摸鱼", effect: { e: 20, m: 0, s: -5, c: 0, p: -10 }, text: "摸鱼成功，带薪拉屎半小时。" },
-            { name: "玩命干活", effect: { e: -20, m: 0, s: 10, c: 0, p: 15 }, text: "疯狂输出，键盘敲出火星。" },
-            { name: "向上管理", effect: { e: -5, m: -0.1, s: 5, c: 5, p: 5 }, text: "老板很受用，点点头。" },
-            { name: "考证学习", effect: { e: -20, m: 0, s: 10, c: 0, p: 5 }, promo: 10, text: "背了50个单词，离上岸又近一步。" },
-            { name: "社交八卦", effect: { e: -5, m: -0.2, s: -15, c: 10, p: 0 }, text: "吃到惊天大瓜，心情愉悦。" },
-            { name: "带薪冥想", effect: { e: 5, m: 0, s: -25, c: 0, p: 0 }, text: "闭目养神20分钟，心如止水。" }
-        ];
+        // Action Pools by Career Stage
+        // Each action has base cost/gain per 1 AP.
+        // Some might scale differently but linear for now is fine.
+        const ACTION_POOLS = {
+            associate: [
+                { id: 'grunt', name: "疯狂抽凭 (Grunt Work)", desc: "绩效++, 精力--", base: { e: -5, p: 4 } },
+                { id: 'study', name: "备考CPA (Study)", desc: "精力--, 晋升%", base: { e: -4, promo: 3 } },
+                { id: 'slack', name: "带薪摸鱼 (Slack)", desc: "精力++, 绩效-", base: { e: 5, p: -2 } },
+                { id: 'admin', name: "贴发票报销 (Admin)", desc: "压力+, 绩效+", base: { s: 3, p: 2 } },
+                { id: 'gossip', name: "八卦社交 (Gossip)", desc: "人脉+, 财富-", base: { c: 3, m: -0.05 } },
+                { id: 'kissup', name: "讨好前辈 (Kiss Up)", desc: "绩效+, 人脉+", base: { p: 2, c: 2 } }
+            ],
+            manager: [
+                { id: 'review', name: "Review底稿 (QC)", desc: "精力--, 绩效++", base: { e: -6, p: 5 } },
+                { id: 'collect', name: "催客户回款 (Collection)", desc: "压力++, 绩效+", base: { s: 5, p: 3 } },
+                { id: 'pua', name: "PUA小朋友 (Mgmt)", desc: "绩效+, 人脉-", base: { p: 3, c: -2 } },
+                { id: 'report', name: "向Par汇报 (Report)", desc: "压力+, 人脉++", base: { s: 4, c: 4 } },
+                { id: 'blame', name: "甩锅 (Blame Shift)", desc: "绩效+, 压力-", base: { p: 2, s: -3 } },
+                { id: 'slack', name: "摸鱼 (Slack)", desc: "精力++, 绩效-", base: { e: 5, p: -3 } }
+            ],
+            partner: [
+                { id: 'bd', name: "打高尔夫BD (Sales)", desc: "人脉++, 财富-", base: { c: 6, m: -0.2 } },
+                { id: 'townhall', name: "演讲画饼 (Townhall)", desc: "绩效+, 精力-", base: { p: 4, e: -2 } },
+                { id: 'politics', name: "高层内斗 (Politics)", desc: "压力++, 人脉+", base: { s: 8, c: 5 } },
+                { id: 'cut', name: "裁员优化 (Cost Cutting)", desc: "绩效++, 人脉--", base: { p: 8, c: -5 } },
+                { id: 'sabbatical', name: "休长假 (Sabbatical)", desc: "压力--, 精力++", base: { s: -10, e: 10 } },
+                { id: 'pr', name: "参加峰会 (PR)", desc: "人脉++, 绩效+", base: { c: 4, p: 2 } }
+            ]
+        };
 
-        // Combined Event Pool (Old + New Massive Pool)
-        // Mapped to internal keys: health->e, wealth->m, sanity->s, connection->c, performance->p
+        // Events Pool (same as before)
         const EVENTS = [
-            // Original Converted
             { id: 1, min:0, max:2, text: "打印机卡纸了，墨粉洒了一地。", choices: [
                 { label: "自己动手修", eff: { e:-10, p:5 }, log: "Manager 夸你 Handy。" },
                 { label: "找 Admin", eff: { m:-0.05, c:5 }, log: "请 Admin 喝奶茶搞定。" }
@@ -430,88 +471,14 @@
                 { label: "回家做", eff: { e:5 }, log: "舒服了，但效率变低。" },
                 { label: "坚持到底", eff: { e:-10, p:5 }, log: "汗流浃背，感动中国。" }
             ]},
-
-            // New Massive Pool (Converted keys)
-            {
-                id: 201, min: 0, max: 8,
-                text: "本季度流感肆虐，整个审计组倒了一半，你也开始发烧。",
-                choices: [
-                  { label: "去医院挂水", eff: { e: 10, m: -0.2, p: -5 }, log: "身体好转，但存款少了。" },
-                  { label: "吞片布洛芬继续干", eff: { e: -15, s: -5, p: 5 }, log: "你是真正的钢铁战士。" }
-                ]
-            },
-            {
-                id: 202, min: 1, max: 6,
-                text: "好不容易约了心仪的对象吃晚饭，Manager 突然在群里 @所有人 开会。",
-                choices: [
-                  { label: "放鸽子，回公司", eff: { s: -10, c: -5, p: 5 }, log: "对象把你拉黑了，但底稿保住了。" },
-                  { label: "假装没看见", eff: { s: 10, c: 5, p: -10 }, log: "约会很成功，除了第二天被骂了一顿。" }
-                ]
-            },
-            {
-                id: 203, min: 2, max: 8,
-                text: "你听到了一个惊天八卦：隔壁组的 Senior 和 Manager 在茶水间吵架，似乎涉及感情纠纷。",
-                choices: [
-                  { label: "加入吃瓜小分队", eff: { s: 5, c: 5, p: -5 }, log: "掌握了一手内幕，和同事关系更近了。" },
-                  { label: "两耳不闻窗外事", eff: { s: 0, p: 5 }, log: "你不仅没听到八卦，还显得很不合群。" }
-                ]
-            },
-            {
-                id: 204, min: 0, max: 5,
-                text: "你跟风买的几只股票/基金，最近绿得发光，跌幅超过 30%。",
-                choices: [
-                  { label: "割肉离场", eff: { m: -2.0, s: -10 }, log: "心在滴血，相当于白干了两个月。" },
-                  { label: "装死不动", eff: { m: -0.5, s: -5 }, log: "只要我不卖，就没有亏损。" }
-                ]
-            },
-            {
-                id: 205, min: 0, max: 8,
-                text: "长期久坐导致你的腰椎间盘突出犯了，坐立难安。",
-                choices: [
-                  { label: "站着办公", eff: { e: -5, p: 5 }, log: "全公司都看到了你的敬业（和痛苦）。" },
-                  { label: "请病假去理疗", eff: { e: 10, m: -0.1, p: -10 }, log: "身体舒服了，但进度落后了。" }
-                ]
-            },
-            {
-                id: 206, min: 3, max: 7,
-                text: "猎头给你推了一个 '独角兽' 公司的 Offer，薪资涨幅 40%，但听说那是 '大小周'。",
-                choices: [
-                  { label: "去面试看看", eff: { s: 5, c: 5 }, log: "拿到了Offer作为筹码，心态稳多了。" },
-                  { label: "算了，还是四大稳", eff: { s: -5, c: -5 }, log: "你拒绝了机会，继续在底稿中沉沦。" }
-                ]
-            },
-            {
-                id: 207, min: 0, max: 4,
-                text: "你报销的打车费被财务退回了三次，理由分别是：发票模糊、行程不符、超标。",
-                choices: [
-                  { label: "怒写邮件撕逼", eff: { s: 5, c: -5 }, log: "财务妥协了，但你上了黑名单。" },
-                  { label: "自掏腰包", eff: { m: -0.05, s: -5 }, log: "花钱消灾，不想再折腾了。" }
-                ]
-            },
-            {
-                id: 208, min: 2, max: 6,
-                text: "项目上的实习生把咖啡泼在了客户的原始凭证上。",
-                choices: [
-                  { label: "帮小朋友背锅", eff: { c: 10, p: -5 }, log: "小朋友感动得快哭了，视你为恩人。" },
-                  { label: "让小朋友自己去坦白", eff: { c: -5, p: 0 }, log: "小朋友被劝退了，你落了个冷酷的名声。" }
-                ]
-            },
-            {
-                id: 209, min: 5, max: 9,
-                text: "行业监管越来越严，听说隔壁所有个大项目被立案调查了，人心惶惶。",
-                choices: [
-                  { label: "检查自己的底稿", eff: { p: 5, s: -10 }, log: "越看越害怕，赶紧补了几个勤勉尽责程序。" },
-                  { label: "喝茶看戏", eff: { s: 5, c: 5 }, log: "只要火不烧到自己身上，就是好日子。" }
-                ]
-            },
-            {
-                id: 210, min: 0, max: 8,
-                text: "你的 Excel 突然报错 '资源不足'，且没有保存。",
-                choices: [
-                  { label: "砸键盘", eff: { s: -10, e: -5 }, log: "键盘坏了，还得赔钱。" },
-                  { label: "深呼吸，重做", eff: { s: 5, p: 5 }, log: "你的抗压能力令人发指。" }
-                ]
-            }
+            { id: 201, min: 0, max: 8, text: "本季度流感肆虐，组里倒了一半。", choices: [
+                  { label: "去医院挂水", eff: { e: 10, m: -0.2, p: -5 }, log: "身体好转，存款变少。" },
+                  { label: "吞布洛芬继续干", eff: { e: -15, s: -5, p: 5 }, log: "你是真正的钢铁战士。" }
+            ]},
+            { id: 202, min: 1, max: 6, text: "约了对象晚饭，Manager 突然开会。", choices: [
+                  { label: "放鸽子回公司", eff: { s: -10, c: -5, p: 5 }, log: "对象拉黑，底稿保住。" },
+                  { label: "假装没看见", eff: { s: 10, c: 5, p: -10 }, log: "约会成功，被骂一顿。" }
+            ]}
         ];
 
         // --- 2. STATE ---
@@ -521,10 +488,12 @@
             quarter: 1,
             rankIdx: 0,
             stats: { energy: 100, money: 0.8, stress: 50, conn: 0, perf: 50 },
-            history: [], // Last 5 event IDs
-            selectedActions: [], // Indices 0-5
+            history: [],
+            ap: 10,
+            allocations: {}, // { actionId: count }
+            lastMaxAction: null, // ID of action with most AP last turn
             promoChance: 0,
-            eventQueue: [] // For chaos mode
+            eventQueue: []
         };
 
         // --- 3. DOM ELEMENTS ---
@@ -550,8 +519,9 @@
             },
 
             cardContent: document.getElementById('card-content'),
-            decisionGrid: document.getElementById('decision-grid'),
-            options: document.querySelectorAll('.decision-opt'),
+            actionListContainer: document.getElementById('action-list-container'),
+            actionsList: document.getElementById('actions-list'),
+            apCount: document.getElementById('ap-count'),
 
             actionArea: document.getElementById('action-area'),
             mainBtn: document.getElementById('btn-action')
@@ -582,76 +552,169 @@
             }
 
             // 1. Reset UI for Decision
-            renderStats(); // Ensure header is fresh
-            ui.decisionGrid.classList.remove('hidden');
+            renderStats();
+            state.ap = 10;
+            state.allocations = {};
+
+            ui.actionListContainer.classList.remove('hidden');
             ui.cardContent.classList.add('hidden');
-            ui.actionArea.innerHTML = `<button class="btn-main" id="btn-run-q" disabled>请选择 3 个行动</button>`;
 
-            // Clear selections
-            state.selectedActions = [];
-            ui.options.forEach(opt => opt.classList.remove('selected'));
-
-            // Bind Click
-            document.getElementById('btn-run-q').onclick = runQuarter;
+            renderActionList();
+            updateAPUI();
         }
 
-        function toggleOption(idx) {
-            const list = state.selectedActions;
-            if(list.includes(idx)) {
-                // Remove
-                state.selectedActions = list.filter(i => i !== idx);
-                ui.options[idx].classList.remove('selected');
-            } else {
-                // Add (limit 3)
-                if(list.length < 3) {
-                    list.push(idx);
-                    ui.options[idx].classList.add('selected');
-                }
+        function getActionPool() {
+            if (state.rankIdx >= 8) return ACTION_POOLS.partner; // Partner
+            if (state.rankIdx >= 5) return ACTION_POOLS.manager; // Manager
+            return ACTION_POOLS.associate; // Associate
+        }
+
+        function renderActionList() {
+            ui.actionsList.innerHTML = '';
+            const pool = getActionPool();
+
+            pool.forEach(act => {
+                const row = document.createElement('div');
+                row.className = 'action-row';
+                row.id = `row-${act.id}`;
+
+                // Content
+                row.innerHTML = `
+                    <div class="act-info">
+                        <div class="act-name">${act.name}</div>
+                        <div class="act-desc">${act.desc}</div>
+                    </div>
+                    <div class="stepper">
+                        <button class="step-btn" onclick="modAP('${act.id}', -1)">-</button>
+                        <div class="step-val" id="val-${act.id}">0</div>
+                        <button class="step-btn" onclick="modAP('${act.id}', 1)">+</button>
+                    </div>
+                `;
+                ui.actionsList.appendChild(row);
+                state.allocations[act.id] = 0;
+            });
+        }
+
+        // Global so onclick works
+        window.modAP = function(id, delta) {
+            const current = state.allocations[id];
+
+            // Check limits
+            if (delta > 0 && state.ap <= 0) return; // No AP left
+            if (delta < 0 && current <= 0) return; // Can't go negative
+
+            state.allocations[id] += delta;
+            state.ap -= delta;
+
+            // UI Feedback
+            updateAPUI();
+
+            // Vibration if supported
+            if (navigator.vibrate) navigator.vibrate(10);
+        };
+
+        function updateAPUI() {
+            ui.apCount.textContent = `AP: ${state.ap} / 10`;
+
+            // Update counts in rows
+            for (let id in state.allocations) {
+                document.getElementById(`val-${id}`).textContent = state.allocations[id];
+                const row = document.getElementById(`row-${id}`);
+                if (state.allocations[id] > 0) row.classList.add('active');
+                else row.classList.remove('active');
             }
 
-            // Update Button
+            // Update Buttons
+            const pool = getActionPool();
+            pool.forEach(act => {
+                // Disable + if AP is 0
+                const plusBtn = document.querySelector(`#row-${act.id} .step-btn:last-child`);
+                plusBtn.disabled = (state.ap <= 0);
+            });
+
+            // Start Button Logic
+            const usedAP = 10 - state.ap;
             const btn = document.getElementById('btn-run-q');
-            if(state.selectedActions.length === 3) {
-                btn.disabled = false;
-                btn.textContent = "开始本季度";
-                btn.style.background = getComputedStyle(document.documentElement).getPropertyValue('--accent-blue');
+            if (!btn) {
+                ui.actionArea.innerHTML = `<button class="btn-main" id="btn-run-q">执行计划</button>`;
+                document.getElementById('btn-run-q').onclick = runQuarter;
             } else {
-                btn.disabled = true;
-                btn.textContent = `还需选择 ${3 - state.selectedActions.length} 项`;
-                btn.style.background = '#1C1C1E';
+                // Allow start if >= 1 AP used
+                btn.disabled = (usedAP === 0);
+                if (usedAP > 0) {
+                    btn.textContent = state.ap > 0 ? `执行计划 (剩余 ${state.ap} AP)` : "执行计划";
+                    btn.style.background = getComputedStyle(document.documentElement).getPropertyValue('--accent-blue');
+                } else {
+                    btn.textContent = "请分配 AP";
+                    btn.style.background = '#1C1C1E';
+                }
             }
         }
 
         async function runQuarter() {
             // UI Switch
-            ui.decisionGrid.classList.add('hidden');
+            ui.actionListContainer.classList.add('hidden');
             ui.cardContent.classList.remove('hidden');
             ui.cardContent.innerHTML = '';
             ui.actionArea.innerHTML = ''; // Clear button
 
-            // 1. Process 3 Actions
-            for(let i=0; i<3; i++) {
-                const actIdx = state.selectedActions[i];
-                const action = ACTIONS[actIdx];
+            // 1. Calculate and Execute Actions
+            const pool = getActionPool();
+            let maxAP = 0;
+            let currentMaxAction = null;
 
-                // Logic
-                applyEffect(action.effect);
-                if(action.promo) state.promoChance += action.promo;
+            // Filter actions with AP > 0
+            const activeActions = pool.filter(a => state.allocations[a.id] > 0);
 
-                // Format Diff String
-                const diffStr = formatDiff(action.effect);
+            for (let act of activeActions) {
+                const count = state.allocations[act.id];
+                if (count > maxAP) {
+                    maxAP = count;
+                    currentMaxAction = act.id;
+                }
 
-                // Render Text
-                await typeBlock("行动结算", action.text, diffStr);
+                // Diminishing Returns Check
+                // "If > 50% AP (count > 5) on same action as lastMaxAction"
+                let isDiminished = false;
+                // Bug fix: Ensure lastMaxAction logic works across turns
+                if (state.lastMaxAction === act.id && count > 5) {
+                    isDiminished = true;
+                }
+
+                // Calculate Total Effect
+                let totalEff = {};
+                for (let k in act.base) {
+                    let val = act.base[k] * count;
+
+                    if (isDiminished) {
+                        const isCost = (val < 0 && k !== 's') || (val > 0 && k === 's');
+                        if (isCost) val *= 1.5;
+                        else val *= 0.5;
+                    }
+                    totalEff[k] = val;
+                }
+
+                // Apply
+                applyEffect(totalEff);
+                if (act.base.promo) state.promoChance += (act.base.promo * count);
+
+                // Render Log
+                const diffStr = formatDiff(totalEff);
+                let logText = `投入 ${count} AP 执行了 ${act.name}。`;
+                if (isDiminished) logText += ` <span style="color:var(--accent-red);font-weight:700;">(重复过度，效率降低！)</span>`;
+
+                await typeBlock("行动结算", logText, diffStr);
                 await wait(600);
             }
+
+            // Update History Logic
+            state.lastMaxAction = currentMaxAction;
 
             // 2. Salary Logic (Passive)
             const pay = SALARY[state.rankIdx];
             applyEffect({m: pay});
 
             // 3. Chaos Mode: 3 Random Events
-            // Prepare queue
             state.eventQueue = [];
             for(let k=0; k<3; k++) {
                 const ev = pickRandomEvent();
@@ -671,7 +734,6 @@
 
             let event;
             if(pool.length === 0) {
-                // Recycle history if exhausted
                 const anyPool = EVENTS.filter(e => state.rankIdx >= e.min && state.rankIdx <= e.max);
                 event = anyPool[Math.floor(Math.random() * anyPool.length)];
             } else {
@@ -687,7 +749,6 @@
 
         async function processEventQueue() {
             if(state.eventQueue.length === 0) {
-                // All done, show Next Quarter
                 ui.actionArea.innerHTML = `<button class="btn-main" id="btn-cont">下一季度</button>`;
                 document.getElementById('btn-cont').onclick = () => {
                     state.quarter++;
@@ -703,7 +764,6 @@
         async function renderEvent(event) {
             await typeBlock("突发事件", event.text, "");
 
-            // Render Choices
             const container = document.createElement('div');
             container.style.marginTop = "20px";
             container.style.animation = "fadeIn 0.5s";
@@ -726,22 +786,18 @@
             applyEffect(choice.eff);
             const diffStr = formatDiff(choice.eff);
 
-            // Show result text in card
             const resDiv = document.createElement('div');
             resDiv.className = 'text-block';
             resDiv.innerHTML = `<div class="text-sys">结果</div><div>${choice.log}${diffStr}</div>`;
             ui.cardContent.appendChild(resDiv);
             resDiv.scrollIntoView({behavior: "smooth"});
 
-            // Check Game Over
             const dead = checkDeath();
             if(dead) {
                 ui.actionArea.innerHTML = `<button class="btn-main" style="background:var(--accent-red)" onclick="location.reload()">Game Over: ${dead}</button>`;
                 return;
             }
 
-            // Continue to next event in queue
-            // Small delay
             setTimeout(processEventQueue, 800);
         }
 
@@ -751,7 +807,7 @@
             if(!eff) return;
             const s = state.stats;
             if(eff.e) s.energy = clamp(s.energy + eff.e, 0, 100);
-            if(eff.m) s.money = Number((s.money + eff.m).toFixed(2)); // Unbounded
+            if(eff.m) s.money = Number((s.money + eff.m).toFixed(2));
             if(eff.s) s.stress = clamp(s.stress + eff.s, 0, 100);
             if(eff.c) s.conn = clamp(s.conn + eff.c, 0, 100);
             if(eff.p) s.perf = clamp(s.perf + eff.p, 0, 100);
@@ -763,7 +819,7 @@
             let parts = [];
             ['p', 'e', 'm', 's', 'c'].forEach(k => {
                 if(eff[k]) {
-                    const val = eff[k];
+                    const val = Number(eff[k].toFixed(1)); // Format nicely
                     const label = STAT_MAP[k];
                     const sign = val > 0 ? '+' : '';
                     const cls = getDiffClass(k, val);
@@ -795,7 +851,6 @@
             ui.bars.conn.style.width = state.stats.conn + '%';
             ui.bars.perf.style.width = state.stats.perf + '%';
 
-            // Header Update
             ui.dispName.textContent = state.name;
             ui.dispTime.textContent = `第 ${state.year} 年 Q${state.quarter}`;
             ui.dispRank.textContent = RANKS[state.rankIdx];
@@ -811,13 +866,11 @@
             span.classList.add('type-cursor');
             div.scrollIntoView({behavior: "smooth"});
 
-            // Simple type effect
             for(let char of text) {
                 span.textContent += char;
                 await wait(20);
             }
 
-            // Append Diff
             if(metaHtml) {
                 span.innerHTML += ` ${metaHtml}`;
             }
@@ -825,7 +878,7 @@
             span.classList.remove('type-cursor');
         }
 
-        // --- 7. YEAR END & PROMOTION ---
+        // --- 7. YEAR END ---
         function doYearEnd() {
             ui.modal.classList.remove('hidden');
             ui.loginBox.classList.add('hidden');
@@ -834,15 +887,13 @@
             const s = state.stats;
             const idx = state.rankIdx;
 
-            let resultType = "STAY"; // STAY, PROMO, FIRE
+            let resultType = "STAY";
             let msg = "";
 
-            // 1. PIP Logic (Priority High)
             if (s.perf < 30) {
                 resultType = "FIRE";
                 msg = `你的绩效仅为 ${s.perf} 分，远低于标准。HR 找你谈话了，建议你拿 N+1 走人。`;
             } else {
-                // 2. Promotion Logic
                 if (idx < 5) {
                     if (s.perf > 80) {
                         resultType = "PROMO";
@@ -869,7 +920,6 @@
                 }
             }
 
-            // Render
             let title = "年终评估";
             let btnText = "开启下一年";
             let onBtn = null;
@@ -879,7 +929,7 @@
                 btnText = "Game Over (重开)";
                 onBtn = () => location.reload();
             } else if (resultType === "PROMO") {
-                if (state.rankIdx === 7) { // Promoting to Partner
+                if (state.rankIdx === 7) {
                     title = "VICTORY: 荣升合伙人";
                     btnText = "Game Over (胜利)";
                     onBtn = () => location.reload();
@@ -904,22 +954,18 @@
 
             document.getElementById('btn-next-year').textContent = btnText;
             document.getElementById('btn-next-year').onclick = onBtn || (() => {
-                // Reset for next year
                 state.year++;
                 state.quarter = 1;
                 state.promoChance = 0;
-
-                // Reset/Recover Stats
-                state.stats.energy = 100; // Full recover
-                state.stats.stress = Math.max(0, state.stats.stress - 20); // Recover some stress
-                state.stats.perf = 50; // Reset Perf for new year
+                state.stats.energy = 100;
+                state.stats.stress = Math.max(0, state.stats.stress - 20);
+                state.stats.perf = 50;
 
                 ui.modal.classList.add('hidden');
                 startQuarter();
             });
         }
 
-        // Utils
         const wait = ms => new Promise(r => setTimeout(r, ms));
         const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
 
