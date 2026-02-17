@@ -126,6 +126,9 @@
     <header id="status-bar">
         <div class="status-row">
             <span id="year-display">Year 1</span>
+            <span id="quarter-display">Q1/4</span>
+        </div>
+        <div class="status-row">
             <span id="level-display">Audit Associate 1</span>
         </div>
         <div class="stats-row">
@@ -144,10 +147,24 @@
     </footer>
 
     <script>
+        // --- Game Constants ---
+        const CAREER_LADDER = [
+            'Audit Associate 1 (A1)',
+            'Audit Associate 2 (A2)',
+            'Senior Associate 1 (S1)',
+            'Senior Associate 2 (S2)',
+            'Senior Associate 3 (S3)',
+            'Manager 1 (M1)',
+            'Manager 2 (M2)',
+            'Senior Manager (SM)',
+            'Partner (Par)'
+        ];
+
         // --- Game State ---
         const gameState = {
             year: 1,
-            level: "Audit Associate 1",
+            quarter: 1, // 1-4 representing Q1-Q4
+            levelIndex: 0, // Points to CAREER_LADDER index
             stats: {
                 health: 100,
                 sanity: 100,
@@ -216,6 +233,7 @@
         const logElement = document.getElementById('game-log');
         const controlsElement = document.getElementById('controls');
         const yearDisplay = document.getElementById('year-display');
+        const quarterDisplay = document.getElementById('quarter-display');
         const levelDisplay = document.getElementById('level-display');
         const hpVal = document.getElementById('hp-val');
         const sanVal = document.getElementById('san-val');
@@ -240,7 +258,8 @@
          */
         function updateUI() {
             yearDisplay.textContent = `Year ${gameState.year}`;
-            levelDisplay.textContent = gameState.level;
+            quarterDisplay.textContent = `Q${gameState.quarter}/4`;
+            levelDisplay.textContent = CAREER_LADDER[gameState.levelIndex];
             hpVal.textContent = gameState.stats.health;
             sanVal.textContent = gameState.stats.sanity;
             kpiVal.textContent = gameState.stats.performance;
@@ -300,7 +319,7 @@
             const event = gameEvents[randomIndex];
 
             printLog("----------------------------------------");
-            printLog(`[随机事件] ${event.text}`);
+            printLog(`[Q${gameState.quarter} 随机事件] ${event.text}`);
 
             // Map choices to button format
             const buttonOptions = event.choices.map(choice => {
@@ -336,18 +355,116 @@
             if (choice.effect.performance) statsLog.push(`KPI ${choice.effect.performance > 0 ? '+' : ''}${choice.effect.performance}`);
             if (statsLog.length > 0) printLog(`(${statsLog.join(', ')})`);
 
-            // 4. Check for Game Over
+            // 4. Check for Game Over (Health/Sanity)
             if (checkGameOver()) return;
 
-            // 5. Show "Next Week" button
+            // 5. Determine next step (Next Quarter or End of Year)
+            if (gameState.quarter < 4) {
+                renderButtons([
+                    {
+                        label: "进入下一季度",
+                        action: nextQuarter
+                    }
+                ]);
+            } else {
+                 renderButtons([
+                    {
+                        label: "年终总结与评估",
+                        action: endYearAssessment
+                    }
+                ]);
+            }
+        }
+
+        function nextQuarter() {
+            gameState.quarter++;
+            updateUI();
+            triggerEvent();
+        }
+
+        /**
+         * Handles the End of Year Assessment logic.
+         */
+        function endYearAssessment() {
+            printLog("========================================");
+            printLog(`【Year ${gameState.year} 年终评估】`);
+            printLog("HR 和合伙人正在审阅你这一年的表现...");
+
+            // Delay slightly for effect (optional, simulated by text here)
+
+            // 1. Check Win Condition
+            // (Only if we reached Partner, but we usually promote TO partner at the end of the year)
+            // Logic: Check current level or check if promotion leads to Partner.
+            // Let's process promotion first.
+
+            let performance = gameState.stats.performance;
+            let promoted = false;
+            let gameOver = false;
+
+            if (performance < 40) {
+                // Termination
+                printLog(`!!! 你的绩效评分仅为 ${performance} (低于40)。`);
+                printLog("合伙人面色凝重地通知你：由于绩效不达标，你被列入 PIP (绩效改进计划)，并最终被劝退。");
+                printLog("游戏结束。");
+                gameOver = true;
+                renderButtons([{ label: "重新开始", action: () => location.reload() }]);
+                return;
+            } else if (performance > 80) {
+                // Promotion
+                if (gameState.levelIndex < CAREER_LADDER.length - 1) {
+                    gameState.levelIndex++;
+                    promoted = true;
+                    printLog(`*** 恭喜！你的绩效评分高达 ${performance}！`);
+                    printLog(`你成功晋升为：${CAREER_LADDER[gameState.levelIndex]}！`);
+                } else {
+                    // Already Partner? This shouldn't happen usually unless infinite mode.
+                    printLog(`你已经是 ${CAREER_LADDER[gameState.levelIndex]}，独孤求败。`);
+                }
+            } else {
+                // Stay
+                printLog(`你的绩效评分为 ${performance}。表现尚可，但未达到晋升标准。`);
+                printLog(`你将继续保持当前职级：${CAREER_LADDER[gameState.levelIndex]}。`);
+            }
+
+            // Check Win Condition (Partner)
+            if (gameState.levelIndex >= CAREER_LADDER.length - 1) {
+                printLog("****************************************");
+                printLog("恭喜你！你已经攀登到了职业生涯的顶峰——合伙人 (Partner)！");
+                printLog("你不仅生存了下来，还成为了规则的制定者。");
+                printLog("VICTORY - 游戏通关！");
+                printLog("****************************************");
+                renderButtons([{ label: "重新开始", action: () => location.reload() }]);
+                return;
+            }
+
+            // Reset for New Year
+            gameState.year++;
+            gameState.quarter = 1;
+            gameState.stats.performance = 50; // Reset KPI
+
+            // Health/Sanity recovery
+            let healthRecovery = 20;
+            let sanityRecovery = 20;
+
+            let oldHealth = gameState.stats.health;
+            gameState.stats.health = Math.min(100, gameState.stats.health + healthRecovery);
+            let healthGain = gameState.stats.health - oldHealth;
+
+            let oldSanity = gameState.stats.sanity;
+            gameState.stats.sanity = Math.min(100, gameState.stats.sanity + sanityRecovery);
+            let sanityGain = gameState.stats.sanity - oldSanity;
+
+            printLog("----------------------------------------");
+            printLog(`新的一年开始了 (Year ${gameState.year})。`);
+            printLog(`经过假期的休整，体力 +${healthGain}，SAN值 +${sanityGain}。`);
+            printLog("绩效评分已重置为 50。准备迎接新的挑战吧。");
+
+            updateUI();
+
             renderButtons([
                 {
-                    label: "下一周 / 继续",
-                    action: () => {
-                        // In a real game, we might increment year/week here
-                        // For now, just trigger next event
-                        triggerEvent();
-                    }
+                    label: `开始 Year ${gameState.year}`,
+                    action: triggerEvent
                 }
             ]);
         }
