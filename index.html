@@ -106,10 +106,6 @@
             margin-top: 12px;
         }
 
-        /* Mobile adjustment: if too narrow, wrap?
-           Actually, 5 columns might fit on most phones if text is small.
-           Alternatively, make it scrollable or 3+2. Let's try flexible wrapping.
-        */
         @media (max-width: 360px) {
             .stats-grid {
                 grid-template-columns: repeat(3, 1fr);
@@ -390,51 +386,132 @@
         };
 
         const ACTIONS = [
-            { name: "疯狂摸鱼", effect: { e: 20, m: 0, s: -5, c: 0, p: -10 }, text: "你找了个角落刷了一下午手机。电量满了，绩效红了。" },
-            { name: "玩命干活", effect: { e: -20, m: 0, s: 10, c: 0, p: 15 }, text: "你开启了 Focus 模式，清空了待办事项。发际线隐隐作痛。" },
-            { name: "向上管理", effect: { e: -5, m: -0.1, s: 5, c: 5, p: 5 }, text: "你给 Partner 买了杯咖啡，并夸他的领带很有品味。" },
-            { name: "考证学习", effect: { e: -20, m: 0, s: 10, c: 0, p: 5 }, promo: 10, text: "你在地铁上背了 50 个单词。离 CPA 又近了一步。" },
-            { name: "社交八卦", effect: { e: -5, m: -0.2, s: -15, c: 10, p: 0 }, text: "你在茶水间听到了惊天大瓜。心情愉悦，钱包缩水。" },
-            { name: "带薪冥想", effect: { e: 5, m: 0, s: -25, c: 0, p: 0 }, text: "你在厕所隔间闭目养神了 20 分钟。心态稳了。" }
+            { name: "疯狂摸鱼", effect: { e: 20, m: 0, s: -5, c: 0, p: -10 }, text: "摸鱼成功，带薪拉屎半小时。" },
+            { name: "玩命干活", effect: { e: -20, m: 0, s: 10, c: 0, p: 15 }, text: "疯狂输出，键盘敲出火星。" },
+            { name: "向上管理", effect: { e: -5, m: -0.1, s: 5, c: 5, p: 5 }, text: "老板很受用，点点头。" },
+            { name: "考证学习", effect: { e: -20, m: 0, s: 10, c: 0, p: 5 }, promo: 10, text: "背了50个单词，离上岸又近一步。" },
+            { name: "社交八卦", effect: { e: -5, m: -0.2, s: -15, c: 10, p: 0 }, text: "吃到惊天大瓜，心情愉悦。" },
+            { name: "带薪冥想", effect: { e: 5, m: 0, s: -25, c: 0, p: 0 }, text: "闭目养神20分钟，心如止水。" }
         ];
 
+        // Combined Event Pool (Old + New Massive Pool)
+        // Mapped to internal keys: health->e, wealth->m, sanity->s, connection->c, performance->p
         const EVENTS = [
-            // A-Level
+            // Original Converted
             { id: 1, min:0, max:2, text: "打印机卡纸了，墨粉洒了一地。", choices: [
-                { label: "自己动手修", eff: { e:-10, p:5 }, log: "Manager 夸你 Handy，但你满手黑墨。" },
-                { label: "找 Admin", eff: { m:-0.05, c:5 }, log: "请 Admin 喝奶茶，搞定。" }
+                { label: "自己动手修", eff: { e:-10, p:5 }, log: "Manager 夸你 Handy。" },
+                { label: "找 Admin", eff: { m:-0.05, c:5 }, log: "请 Admin 喝奶茶搞定。" }
             ]},
             { id: 2, min:0, max:3, text: "报销单贴错了，财务退回。", choices: [
-                { label: "通宵重贴", eff: { e:-15, s:10 }, log: "强迫症发作，终于贴齐了。" },
-                { label: "不管了", eff: { p:-10 }, log: "因为没报销，你亏了打车费。" }
+                { label: "通宵重贴", eff: { e:-15, s:10 }, log: "强迫症发作，终于贴齐。" },
+                { label: "不管了", eff: { p:-10 }, log: "亏了打车费，心累。" }
             ]},
-            { id: 3, min:0, max:2, text: "客户财务大姐心情不好，不给资料。", choices: [
+            { id: 3, min:0, max:2, text: "客户财务大姐不给资料。", choices: [
                 { label: "买咖啡哄她", eff: { m:-0.05, c:5 }, log: "大姐开心了，给了钥匙。" },
-                { label: "向 Manager 告状", eff: { c:-5, p:-5 }, log: "Manager 觉得你 Soft Skill 差。" }
+                { label: "向 Manager 告状", eff: { c:-5, p:-5 }, log: "Manager 觉得你太嫩。" }
             ]},
-            { id: 4, min:0, max:8, text: "Excel 未响应，上次保存是 3 小时前。", choices: [
+            { id: 4, min:0, max:8, text: "Excel 未响应，没保存。", choices: [
                 { label: "绝望等待", eff: { s:20 }, log: "奇迹发生！它恢复了！" },
                 { label: "强制关闭", eff: { e:-20, p:5 }, log: "凭记忆重做，手速如飞。" }
             ]},
-            // S-Level
-            { id: 10, min:2, max:4, text: "小朋友（A1）突然哭了，说不干了。", choices: [
+            { id: 10, min:2, max:4, text: "小朋友（A1）突然哭了。", choices: [
                 { label: "安抚并代劳", eff: { e:-20, c:10 }, log: "你是神仙 Senior，自己填坑。" },
-                { label: "严厉批评", eff: { p:-5, c:-10 }, log: "小朋友直接旷工，项目延期。" }
+                { label: "严厉批评", eff: { p:-5, c:-10 }, log: "小朋友直接旷工。" }
             ]},
             { id: 11, min:2, max:5, text: "猎头联系你，工资涨 50%。", choices: [
-                { label: "请假面试", eff: { p:-10, m:0.5 }, log: "面试过了，但你犹豫了。" },
-                { label: "拒绝诱惑", eff: { p:10, s:10 }, log: "我是要成为 Partner 的男人/女人！" }
+                { label: "请假面试", eff: { p:-10, m:0.5 }, log: "面试过了，有点心动。" },
+                { label: "拒绝诱惑", eff: { p:10, s:10 }, log: "为了合伙人梦想，忍了。" }
             ]},
-            // M-Level
-            { id: 20, min:5, max:8, text: "发现合伙人最近迷信八字算命。", choices: [
+            { id: 20, min:5, max:8, text: "发现合伙人迷信八字。", choices: [
                 { label: "聊玄学", eff: { c:20 }, log: "合伙人引为知己。" },
                 { label: "装傻", eff: { p:5 }, log: "保持专业距离。" }
             ]},
-            // General
             { id: 101, min:0, max:8, text: "周末加班，空调坏了。", choices: [
-                { label: "回家做", eff: { e:5 }, log: "效率变低，但舒服了。" },
+                { label: "回家做", eff: { e:5 }, log: "舒服了，但效率变低。" },
                 { label: "坚持到底", eff: { e:-10, p:5 }, log: "汗流浃背，感动中国。" }
-            ]}
+            ]},
+
+            // New Massive Pool (Converted keys)
+            {
+                id: 201, min: 0, max: 8,
+                text: "本季度流感肆虐，整个审计组倒了一半，你也开始发烧。",
+                choices: [
+                  { label: "去医院挂水", eff: { e: 10, m: -0.2, p: -5 }, log: "身体好转，但存款少了。" },
+                  { label: "吞片布洛芬继续干", eff: { e: -15, s: -5, p: 5 }, log: "你是真正的钢铁战士。" }
+                ]
+            },
+            {
+                id: 202, min: 1, max: 6,
+                text: "好不容易约了心仪的对象吃晚饭，Manager 突然在群里 @所有人 开会。",
+                choices: [
+                  { label: "放鸽子，回公司", eff: { s: -10, c: -5, p: 5 }, log: "对象把你拉黑了，但底稿保住了。" },
+                  { label: "假装没看见", eff: { s: 10, c: 5, p: -10 }, log: "约会很成功，除了第二天被骂了一顿。" }
+                ]
+            },
+            {
+                id: 203, min: 2, max: 8,
+                text: "你听到了一个惊天八卦：隔壁组的 Senior 和 Manager 在茶水间吵架，似乎涉及感情纠纷。",
+                choices: [
+                  { label: "加入吃瓜小分队", eff: { s: 5, c: 5, p: -5 }, log: "掌握了一手内幕，和同事关系更近了。" },
+                  { label: "两耳不闻窗外事", eff: { s: 0, p: 5 }, log: "你不仅没听到八卦，还显得很不合群。" }
+                ]
+            },
+            {
+                id: 204, min: 0, max: 5,
+                text: "你跟风买的几只股票/基金，最近绿得发光，跌幅超过 30%。",
+                choices: [
+                  { label: "割肉离场", eff: { m: -2.0, s: -10 }, log: "心在滴血，相当于白干了两个月。" },
+                  { label: "装死不动", eff: { m: -0.5, s: -5 }, log: "只要我不卖，就没有亏损。" }
+                ]
+            },
+            {
+                id: 205, min: 0, max: 8,
+                text: "长期久坐导致你的腰椎间盘突出犯了，坐立难安。",
+                choices: [
+                  { label: "站着办公", eff: { e: -5, p: 5 }, log: "全公司都看到了你的敬业（和痛苦）。" },
+                  { label: "请病假去理疗", eff: { e: 10, m: -0.1, p: -10 }, log: "身体舒服了，但进度落后了。" }
+                ]
+            },
+            {
+                id: 206, min: 3, max: 7,
+                text: "猎头给你推了一个 '独角兽' 公司的 Offer，薪资涨幅 40%，但听说那是 '大小周'。",
+                choices: [
+                  { label: "去面试看看", eff: { s: 5, c: 5 }, log: "拿到了Offer作为筹码，心态稳多了。" },
+                  { label: "算了，还是四大稳", eff: { s: -5, c: -5 }, log: "你拒绝了机会，继续在底稿中沉沦。" }
+                ]
+            },
+            {
+                id: 207, min: 0, max: 4,
+                text: "你报销的打车费被财务退回了三次，理由分别是：发票模糊、行程不符、超标。",
+                choices: [
+                  { label: "怒写邮件撕逼", eff: { s: 5, c: -5 }, log: "财务妥协了，但你上了黑名单。" },
+                  { label: "自掏腰包", eff: { m: -0.05, s: -5 }, log: "花钱消灾，不想再折腾了。" }
+                ]
+            },
+            {
+                id: 208, min: 2, max: 6,
+                text: "项目上的实习生把咖啡泼在了客户的原始凭证上。",
+                choices: [
+                  { label: "帮小朋友背锅", eff: { c: 10, p: -5 }, log: "小朋友感动得快哭了，视你为恩人。" },
+                  { label: "让小朋友自己去坦白", eff: { c: -5, p: 0 }, log: "小朋友被劝退了，你落了个冷酷的名声。" }
+                ]
+            },
+            {
+                id: 209, min: 5, max: 9,
+                text: "行业监管越来越严，听说隔壁所有个大项目被立案调查了，人心惶惶。",
+                choices: [
+                  { label: "检查自己的底稿", eff: { p: 5, s: -10 }, log: "越看越害怕，赶紧补了几个勤勉尽责程序。" },
+                  { label: "喝茶看戏", eff: { s: 5, c: 5 }, log: "只要火不烧到自己身上，就是好日子。" }
+                ]
+            },
+            {
+                id: 210, min: 0, max: 8,
+                text: "你的 Excel 突然报错 '资源不足'，且没有保存。",
+                choices: [
+                  { label: "砸键盘", eff: { s: -10, e: -5 }, log: "键盘坏了，还得赔钱。" },
+                  { label: "深呼吸，重做", eff: { s: 5, p: 5 }, log: "你的抗压能力令人发指。" }
+                ]
+            }
         ];
 
         // --- 2. STATE ---
@@ -446,7 +523,8 @@
             stats: { energy: 100, money: 0.8, stress: 50, conn: 0, perf: 50 },
             history: [], // Last 5 event IDs
             selectedActions: [], // Indices 0-5
-            promoChance: 0
+            promoChance: 0,
+            eventQueue: [] // For chaos mode
         };
 
         // --- 3. DOM ELEMENTS ---
@@ -565,20 +643,26 @@
 
                 // Render Text
                 await typeBlock("行动结算", action.text, diffStr);
-                await wait(800);
+                await wait(600);
             }
 
             // 2. Salary Logic (Passive)
             const pay = SALARY[state.rankIdx];
             applyEffect({m: pay});
 
-            // 3. Random Event
-            await wait(500);
-            triggerRandomEvent();
+            // 3. Chaos Mode: 3 Random Events
+            // Prepare queue
+            state.eventQueue = [];
+            for(let k=0; k<3; k++) {
+                const ev = pickRandomEvent();
+                if(ev) state.eventQueue.push(ev);
+            }
+
+            await wait(400);
+            processEventQueue();
         }
 
-        function triggerRandomEvent() {
-            // Filter
+        function pickRandomEvent() {
             const pool = EVENTS.filter(e =>
                 state.rankIdx >= e.min &&
                 state.rankIdx <= e.max &&
@@ -587,18 +671,33 @@
 
             let event;
             if(pool.length === 0) {
-                // Fallback or recycle history
-                event = EVENTS[Math.floor(Math.random() * EVENTS.length)];
+                // Recycle history if exhausted
+                const anyPool = EVENTS.filter(e => state.rankIdx >= e.min && state.rankIdx <= e.max);
+                event = anyPool[Math.floor(Math.random() * anyPool.length)];
             } else {
                 event = pool[Math.floor(Math.random() * pool.length)];
             }
 
-            // Update History
-            state.history.push(event.id);
-            if(state.history.length > 5) state.history.shift();
+            if(event) {
+                state.history.push(event.id);
+                if(state.history.length > 5) state.history.shift();
+            }
+            return event;
+        }
 
-            // Render Event
-            renderEvent(event);
+        async function processEventQueue() {
+            if(state.eventQueue.length === 0) {
+                // All done, show Next Quarter
+                ui.actionArea.innerHTML = `<button class="btn-main" id="btn-cont">下一季度</button>`;
+                document.getElementById('btn-cont').onclick = () => {
+                    state.quarter++;
+                    startQuarter();
+                };
+                return;
+            }
+
+            const event = state.eventQueue.shift();
+            await renderEvent(event);
         }
 
         async function renderEvent(event) {
@@ -613,7 +712,9 @@
                 const btn = document.createElement('div');
                 btn.className = 'choice-btn';
                 btn.textContent = c.label;
-                btn.onclick = () => resolveEvent(c);
+                btn.onclick = () => {
+                    resolveEvent(c);
+                };
                 container.appendChild(btn);
             });
 
@@ -632,9 +733,6 @@
             ui.cardContent.appendChild(resDiv);
             resDiv.scrollIntoView({behavior: "smooth"});
 
-            // Clear choices
-            ui.actionArea.innerHTML = `<button class="btn-main" id="btn-cont">下一季度</button>`;
-
             // Check Game Over
             const dead = checkDeath();
             if(dead) {
@@ -642,10 +740,9 @@
                 return;
             }
 
-            document.getElementById('btn-cont').onclick = () => {
-                state.quarter++;
-                startQuarter();
-            };
+            // Continue to next event in queue
+            // Small delay
+            setTimeout(processEventQueue, 800);
         }
 
         // --- 6. HELPERS ---
@@ -664,7 +761,6 @@
         function formatDiff(eff) {
             if(!eff) return "";
             let parts = [];
-            // Order: P, E, M, S, C (Perf first as requested priority?) - No specific order but Perf is new.
             ['p', 'e', 'm', 's', 'c'].forEach(k => {
                 if(eff[k]) {
                     const val = eff[k];
@@ -680,11 +776,7 @@
         }
 
         function getDiffClass(key, val) {
-            // Good: E+, M+, S-, C+, P+
-            // Bad: E-, M-, S+, C-, P-
-            if(key === 's') { // Stress logic is inverted
-                return val < 0 ? 'diff-pos' : 'diff-neg';
-            }
+            if(key === 's') return val < 0 ? 'diff-pos' : 'diff-neg';
             return val > 0 ? 'diff-pos' : 'diff-neg';
         }
 
@@ -752,7 +844,6 @@
             } else {
                 // 2. Promotion Logic
                 if (idx < 5) {
-                    // A1(0) -> S3(4). Needs Perf > 80
                     if (s.perf > 80) {
                         resultType = "PROMO";
                         msg = `你的绩效高达 ${s.perf} 分，表现优异，获得晋升！`;
@@ -760,7 +851,6 @@
                         msg = `你的绩效为 ${s.perf} 分。表现尚可，但未达到卓越标准 (80+)，今年原地踏步。`;
                     }
                 } else if (idx >= 5 && idx < 7) {
-                    // M1(5) -> M2(6) -> SM(7). Manager Phase. Needs Perf > 80 AND Conn > 60
                     if (s.perf > 80 && s.conn > 60) {
                         resultType = "PROMO";
                         msg = `作为 Manager，你绩效出色 (${s.perf}) 且人脉广泛 (${s.conn})，成功晋升！`;
@@ -768,8 +858,6 @@
                         msg = `你的绩效 (${s.perf}) 或人脉 (${s.conn}) 未达标 (需 P>80, C>60)。作为管理层，光干活是不够的。`;
                     }
                 } else if (idx === 7) {
-                    // SM(7) -> Partner(8). Needs Conn > 90 AND Stress < 50
-                    // Note: User said Sanity > 50. My internal var is Stress. So Stress < 50.
                     if (s.conn > 90 && s.stress < 50) {
                         resultType = "PROMO";
                         msg = `你拥有顶级的客户资源 (人脉 ${s.conn}) 和强大的心理素质 (压力 ${s.stress})。恭喜成为合伙人！`;
@@ -777,7 +865,6 @@
                         msg = `合伙人门槛极高。你需要极强的人脉 (>90) 和强大的抗压能力 (压力 < 50)。目前: C${s.conn}, S${s.stress}。`;
                     }
                 } else {
-                    // Already Partner
                     msg = "你已经是 Firm 的主人了。享受分红吧。";
                 }
             }
@@ -796,7 +883,7 @@
                     title = "VICTORY: 荣升合伙人";
                     btnText = "Game Over (胜利)";
                     onBtn = () => location.reload();
-                    state.rankIdx++; // Apply just for display if we continued
+                    state.rankIdx++;
                 } else {
                     title = "CONGRATULATIONS: 晋升";
                     state.rankIdx++;
