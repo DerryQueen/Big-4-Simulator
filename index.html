@@ -98,6 +98,14 @@
             letter-spacing: 0.5px;
         }
 
+        /* Buff Tag */
+        #buff-tag {
+            font-size: 11px; padding: 2px 8px; border-radius: 10px; margin-left: 8px; font-weight:700; display:none;
+        }
+        .buff-busy { background: #FFD60A; color: #000; }
+        .buff-slack { background: #32D74B; color: #fff; }
+        .buff-insp { background: #FF453A; color: #fff; }
+
         /* 5-Column Stats Grid */
         .stats-grid {
             display: grid;
@@ -261,7 +269,7 @@
             backdrop-filter: blur(10px);
             border-top: 1px solid rgba(0,0,0,0.05);
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             gap: 12px;
             z-index: 10;
         }
@@ -270,7 +278,7 @@
             background: #1C1C1E; /* Apple black */
             color: #fff;
             border: none;
-            width: 100%;
+            flex: 1;
             padding: 18px;
             border-radius: 16px;
             font-size: 17px;
@@ -281,6 +289,18 @@
         }
         .btn-main:active { transform: scale(0.98); opacity: 0.9; }
         .btn-main:disabled { background: #E5E5EA; color: #8E8E93; cursor: not-allowed; transform: none; }
+
+        .btn-help {
+            width: 56px;
+            background: #F2F2F7;
+            color: #1D1D1F;
+            border: none;
+            border-radius: 16px;
+            font-size: 24px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex; justify-content: center; align-items: center;
+        }
 
         /* CHOICES (For Random Events) */
         .choice-btn {
@@ -307,11 +327,16 @@
         .modal-box {
             background: #fff; width: 85%; max-width: 320px; padding: 30px; border-radius: 24px; text-align: center;
             box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            max-height: 90vh; overflow-y: auto;
         }
         .modal-input {
             width: 100%; padding: 12px; font-size: 16px; border: 1px solid #E5E5EA; border-radius: 10px; margin: 20px 0; outline: none; background: #F2F2F7;
         }
         .modal-input:focus { background: #fff; border-color: var(--accent-blue); }
+
+        .help-table { width: 100%; text-align: left; font-size: 13px; border-collapse: collapse; margin: 10px 0; }
+        .help-table th { border-bottom: 1px solid #eee; padding: 4px; color:#888; }
+        .help-table td { border-bottom: 1px solid #eee; padding: 4px; }
 
         /* Utility */
         .hidden { display: none !important; }
@@ -335,11 +360,39 @@
             <div id="ye-content" style="text-align:left; margin: 20px 0; font-size:14px; line-height:1.5; color:#333;"></div>
             <button class="btn-main" id="btn-next-year">Start Next Year</button>
         </div>
-        <!-- Summary Modal (Quarterly Report) -->
+        <!-- Summary Modal -->
         <div class="modal-box hidden" id="summary-box">
             <h2 style="margin:0 0 10px;">季度结算报告</h2>
             <div id="summary-content" style="text-align:left; margin: 20px 0; font-size:14px; line-height:1.6; color:#333;"></div>
             <button class="btn-main" id="btn-confirm-summary">确认 (Confirm)</button>
+        </div>
+        <!-- Help Modal -->
+        <div class="modal-box hidden" id="help-box">
+            <h2 style="margin:0 0 10px;">员工手册</h2>
+            <div style="text-align:left; font-size:13px; line-height:1.6; color:#333;">
+                <p><strong>核心指标：</strong></p>
+                <ul style="padding-left:20px; margin:5px 0;">
+                    <li>精力 = 血条 (Health)</li>
+                    <li>压力 = San值 (Sanity)</li>
+                    <li>人脉 = 升职器 (Connection)</li>
+                    <li>绩效 = 生死线 (Performance)</li>
+                </ul>
+                <p><strong>晋升条件：</strong></p>
+                <table class="help-table">
+                    <tr><th>阶梯</th><th>要求</th></tr>
+                    <tr><td>A -> S</td><td>绩效 > 80</td></tr>
+                    <tr><td>S -> M</td><td>绩效 > 80, 人脉 > 60</td></tr>
+                    <tr><td>M -> Par</td><td>人脉 > 90, 压力 < 50</td></tr>
+                </table>
+                <p><strong>失败条件 (Game Over)：</strong></p>
+                <ul style="padding-left:20px; margin:5px 0; color:var(--accent-red);">
+                    <li>精力 < 0 (过劳)</li>
+                    <li>压力 > 100 (崩溃)</li>
+                    <li>财富 < -5 (破产)</li>
+                    <li>绩效 < 30 (劝退)</li>
+                </ul>
+            </div>
+            <button class="btn-main" onclick="document.getElementById('help-box').classList.add('hidden')">关闭</button>
         </div>
     </div>
 
@@ -351,7 +404,10 @@
                     <div class="user-name" id="disp-name">Guest</div>
                     <div class="rank-badge" id="disp-rank">A1</div>
                 </div>
-                <div class="game-time" id="disp-time">第 1 年 Q1</div>
+                <div class="game-time">
+                    <span id="disp-time">第 1 年 Q1</span>
+                    <span id="buff-tag"></span>
+                </div>
             </div>
         </div>
 
@@ -398,7 +454,8 @@
     </div>
 
     <div id="bottom-bar">
-        <div id="action-area">
+        <button class="btn-help" onclick="document.getElementById('help-box').classList.remove('hidden')">?</button>
+        <div id="action-area" style="flex:1;">
             <!-- Buttons injected here -->
             <button class="btn-main" id="btn-action">Action</button>
         </div>
@@ -407,7 +464,7 @@
     <script>
         // --- 1. CONFIG & DATA ---
         const RANKS = ['Audit Associate 1', 'Audit Associate 2', 'Senior 1', 'Senior 2', 'Senior 3', 'Manager 1', 'Manager 2', 'Senior Manager', 'Partner'];
-        const SALARY = [2.4, 3.0, 4.5, 5.4, 6.0, 9.0, 10.5, 15.0, 30.0]; // Wan/Q
+        const SALARY = [2.4, 3.0, 4.5, 5.4, 6.0, 9.0, 10.5, 15.0, 30.0];
 
         const STAT_MAP = {
             e: '精力', m: '财富', s: '压力', c: '人脉', p: '绩效', promo: '晋升概率'
@@ -440,122 +497,52 @@
             ]
         };
 
-        // Expanded Events Pool with 12 New "White Collar" Events
         const EVENTS = [
-            // Original Converted
-            { id: 1, min:0, max:2, text: "打印机卡纸了，墨粉洒了一地。", choices: [
-                { label: "自己动手修", eff: { e:-10, p:5 }, log: "Manager 夸你 Handy。" },
-                { label: "找 Admin", eff: { m:-0.05, c:5 }, log: "请 Admin 喝奶茶搞定。" }
-            ]},
-            { id: 2, min:0, max:3, text: "报销单贴错了，财务退回。", choices: [
-                { label: "通宵重贴", eff: { e:-15, s:10 }, log: "强迫症发作，终于贴齐。" },
-                { label: "不管了", eff: { p:-10 }, log: "亏了打车费，心累。" }
-            ]},
-            { id: 3, min:0, max:2, text: "客户财务大姐不给资料。", choices: [
-                { label: "买咖啡哄她", eff: { m:-0.05, c:5 }, log: "大姐开心了，给了钥匙。" },
-                { label: "向 Manager 告状", eff: { c:-5, p:-5 }, log: "Manager 觉得你太嫩。" }
-            ]},
-            { id: 4, min:0, max:8, text: "Excel 未响应，没保存。", choices: [
-                { label: "绝望等待", eff: { s:20 }, log: "奇迹发生！它恢复了！" },
-                { label: "强制关闭", eff: { e:-20, p:5 }, log: "凭记忆重做，手速如飞。" }
-            ]},
-            { id: 10, min:2, max:4, text: "小朋友（A1）突然哭了。", choices: [
-                { label: "安抚并代劳", eff: { e:-20, c:10 }, log: "你是神仙 Senior，自己填坑。" },
-                { label: "严厉批评", eff: { p:-5, c:-10 }, log: "小朋友直接旷工。" }
-            ]},
-            { id: 11, min:2, max:5, text: "猎头联系你，工资涨 50%。", choices: [
-                { label: "请假面试", eff: { p:-10, m:0.5 }, log: "面试过了，有点心动。" },
-                { label: "拒绝诱惑", eff: { p:10, s:10 }, log: "为了合伙人梦想，忍了。" }
-            ]},
-            { id: 20, min:5, max:8, text: "发现合伙人迷信八字。", choices: [
-                { label: "聊玄学", eff: { c:20 }, log: "合伙人引为知己。" },
-                { label: "装傻", eff: { p:5 }, log: "保持专业距离。" }
-            ]},
-            { id: 101, min:0, max:8, text: "周末加班，空调坏了。", choices: [
-                { label: "回家做", eff: { e:5 }, log: "舒服了，但效率变低。" },
-                { label: "坚持到底", eff: { e:-10, p:5 }, log: "汗流浃背，感动中国。" }
-            ]},
-            { id: 201, min: 0, max: 8, text: "本季度流感肆虐，组里倒了一半。", choices: [
-                  { label: "去医院挂水", eff: { e: 10, m: -0.2, p: -5 }, log: "身体好转，存款变少。" },
-                  { label: "吞布洛芬继续干", eff: { e: -15, s: -5, p: 5 }, log: "你是真正的钢铁战士。" }
-            ]},
-            { id: 202, min: 1, max: 6, text: "约了对象晚饭，Manager 突然开会。", choices: [
-                  { label: "放鸽子回公司", eff: { s: -10, c: -5, p: 5 }, log: "对象拉黑，底稿保住。" },
-                  { label: "假装没看见", eff: { s: 10, c: 5, p: -10 }, log: "约会成功，被骂一顿。" }
-            ]},
-            // New 12 Generic White Collar Events
-            {
-                id: 401, min: 0, max: 8, text: "发给全组的邮件忘加附件了。", choices: [
-                  { label: "立刻撤回", eff: { s: -5 }, log: "手速够快，没人发现。" },
-                  { label: "补发一封", eff: { p: -2 }, log: "发了两封，显得不专业。" }
-                ]
-            },
-            {
-                id: 402, min: 1, max: 6, text: "周五 17:55，客户来紧急需求。", choices: [
-                  { label: "假装没看见", eff: { s: 10, c: -5 }, log: "周末爽了，周一被夺命Call。" },
-                  { label: "通宵搞定", eff: { e: -10, p: 5 }, log: "客户满意，但错过了聚餐。" }
-                ]
-            },
-            {
-                id: 403, min: 0, max: 8, text: "VPN 崩了，IT 说不知道多久修好。", choices: [
-                  { label: "手机热点硬连", eff: { m: -0.1, p: 5 }, log: "流量燃烧，赶上进度。" },
-                  { label: "楼下喝咖啡", eff: { s: 5, p: -5 }, log: "难得休息，有点心虚。" }
-                ]
-            },
-            {
-                id: 404, min: 2, max: 7, text: "开了一下午扯皮会，无结论。", choices: [
-                  { label: "主动整理纪要", eff: { p: 5, s: -5 }, log: "老板觉得你总结能力强。" },
-                  { label: "私下疯狂吐槽", eff: { s: 5, c: 5 }, log: "在小群骂得很开心。" }
-                ]
-            },
-            {
-                id: 405, min: 0, max: 5, text: "忘带工牌，被保安拦住。", choices: [
-                  { label: "叫同事来接", eff: { c: -2, s: -5 }, log: "被同事嘲笑了一整天。" },
-                  { label: "试图尾随混入", eff: { s: 5, p: -2 }, log: "被发现了，极其尴尬。" }
-                ]
-            },
-            {
-                id: 406, min: 3, max: 8, text: "猎头推荐竞对高薪职位 (+50%)。", choices: [
-                  { label: "礼貌拒绝", eff: { c: 2 }, log: "表露忠诚，留了后路。" },
-                  { label: "偷偷发简历", eff: { s: 5, p: -5 }, log: "了解市场价也是好的。" }
-                ]
-            },
-            {
-                id: 407, min: 0, max: 8, text: "续命的咖啡机坏了。", choices: [
-                  { label: "外卖星巴克", eff: { m: -0.05, e: 2 }, log: "钱包受损，精神回归。" },
-                  { label: "喝白开水", eff: { s: -10, p: -5 }, log: "昏昏欲睡，效率极低。" }
-                ]
-            },
-            {
-                id: 408, min: 1, max: 6, text: "Excel 公式全变成 #REF!。", choices: [
-                  { label: "狂按 Ctrl+Z", eff: { s: 5 }, log: "救回来了！感谢微软！" },
-                  { label: "手动查错", eff: { e: -5, s: -10 }, log: "眼睛瞎了，删错一列。" }
-                ]
-            },
-            {
-                id: 409, min: 4, max: 9, text: "难搞客户投诉你的态度。", choices: [
-                  { label: "卑微道歉", eff: { s: -15, p: 5 }, log: "尊严扫地，客户消气。" },
-                  { label: "据理力争", eff: { s: 5, p: -10 }, log: "你爽了，老板收投诉信。" }
-                ]
-            },
-            {
-                id: 410, min: 0, max: 5, text: "赶 Deadline 连吃一周外卖。", choices: [
-                  { label: "继续吃", eff: { e: -10, p: 5 }, log: "胃开始抗议，隐隐作痛。" },
-                  { label: "准时下班做饭", eff: { e: 5, p: -5 }, log: "久违烟火气，活过来了。" }
-                ]
-            },
-            {
-                id: 411, min: 2, max: 7, text: "电脑突然强制系统更新。", choices: [
-                  { label: "对着屏幕发呆", eff: { s: 5, p: -5 }, log: "强制摸鱼，天意如此。" },
-                  { label: "借同事电脑", eff: { p: 2, c: -2 }, log: "同事借了，但脸色不好。" }
-                ]
-            },
-            {
-                id: 412, min: 1, max: 8, text: "电梯偶遇大老板，气氛凝固。", choices: [
-                  { label: "低头装死", eff: { c: -2 }, log: "没敢抬头，空气安静。" },
-                  { label: "硬聊天气", eff: { c: 5, s: -5 }, log: "尬聊两句，老板记住了。" }
-                ]
-            }
+            // Old ...
+            { id: 1, min:0, max:2, text: "打印机卡纸了，墨粉洒了一地。", choices: [ { label: "自己动手修", eff: { e:-10, p:5 }, log: "Manager 夸你 Handy。" }, { label: "找 Admin", eff: { m:-0.05, c:5 }, log: "请 Admin 喝奶茶搞定。" } ]},
+            { id: 2, min:0, max:3, text: "报销单贴错了，财务退回。", choices: [ { label: "通宵重贴", eff: { e:-15, s:10 }, log: "强迫症发作，终于贴齐。" }, { label: "不管了", eff: { p:-10 }, log: "亏了打车费，心累。" } ]},
+            { id: 3, min:0, max:2, text: "客户财务大姐不给资料。", choices: [ { label: "买咖啡哄她", eff: { m:-0.05, c:5 }, log: "大姐开心了，给了钥匙。" }, { label: "向 Manager 告状", eff: { c:-5, p:-5 }, log: "Manager 觉得你太嫩。" } ]},
+            { id: 4, min:0, max:8, text: "Excel 未响应，没保存。", choices: [ { label: "绝望等待", eff: { s:20 }, log: "奇迹发生！它恢复了！" }, { label: "强制关闭", eff: { e:-20, p:5 }, log: "凭记忆重做，手速如飞。" } ]},
+            { id: 10, min:2, max:4, text: "小朋友（A1）突然哭了。", choices: [ { label: "安抚并代劳", eff: { e:-20, c:10 }, log: "你是神仙 Senior，自己填坑。" }, { label: "严厉批评", eff: { p:-5, c:-10 }, log: "小朋友直接旷工。" } ]},
+            { id: 11, min:2, max:5, text: "猎头联系你，工资涨 50%。", choices: [ { label: "请假面试", eff: { p:-10, m:0.5 }, log: "面试过了，有点心动。" }, { label: "拒绝诱惑", eff: { p:10, s:10 }, log: "为了合伙人梦想，忍了。" } ]},
+            { id: 20, min:5, max:8, text: "发现合伙人迷信八字。", choices: [ { label: "聊玄学", eff: { c:20 }, log: "合伙人引为知己。" }, { label: "装傻", eff: { p:5 }, log: "保持专业距离。" } ]},
+            { id: 101, min:0, max:8, text: "周末加班，空调坏了。", choices: [ { label: "回家做", eff: { e:5 }, log: "舒服了，但效率变低。" }, { label: "坚持到底", eff: { e:-10, p:5 }, log: "汗流浃背，感动中国。" } ]},
+            { id: 201, min: 0, max: 8, text: "本季度流感肆虐，组里倒了一半。", choices: [ { label: "去医院挂水", eff: { e: 10, m: -0.2, p: -5 }, log: "身体好转，存款变少。" }, { label: "吞布洛芬继续干", eff: { e: -15, s: -5, p: 5 }, log: "你是真正的钢铁战士。" } ]},
+            { id: 202, min: 1, max: 6, text: "约了对象晚饭，Manager 突然开会。", choices: [ { label: "放鸽子回公司", eff: { s: -10, c: -5, p: 5 }, log: "对象拉黑，底稿保住。" }, { label: "假装没看见", eff: { s: 10, c: 5, p: -10 }, log: "约会成功，被骂一顿。" } ]},
+            { id: 401, min: 0, max: 8, text: "发给全组的邮件忘加附件了。", choices: [ { label: "立刻撤回", eff: { s: -5 }, log: "手速够快，没人发现。" }, { label: "补发一封", eff: { p: -2 }, log: "发了两封，显得不专业。" } ]},
+            { id: 402, min: 1, max: 6, text: "周五 17:55，客户来紧急需求。", choices: [ { label: "假装没看见", eff: { s: 10, c: -5 }, log: "周末爽了，周一被夺命Call。" }, { label: "通宵搞定", eff: { e: -10, p: 5 }, log: "客户满意，但错过了聚餐。" } ]},
+            { id: 403, min: 0, max: 8, text: "VPN 崩了，IT 说不知道多久修好。", choices: [ { label: "手机热点硬连", eff: { m: -0.1, p: 5 }, log: "流量燃烧，赶上进度。" }, { label: "楼下喝咖啡", eff: { s: 5, p: -5 }, log: "难得休息，有点心虚。" } ]},
+            { id: 404, min: 2, max: 7, text: "开了一下午扯皮会，无结论。", choices: [ { label: "主动整理纪要", eff: { p: 5, s: -5 }, log: "老板觉得你总结能力强。" }, { label: "私下疯狂吐槽", eff: { s: 5, c: 5 }, log: "在小群骂得很开心。" } ]},
+            { id: 405, min: 0, max: 5, text: "忘带工牌，被保安拦住。", choices: [ { label: "叫同事来接", eff: { c: -2, s: -5 }, log: "被同事嘲笑了一整天。" }, { label: "试图尾随混入", eff: { s: 5, p: -2 }, log: "被发现了，极其尴尬。" } ]},
+            { id: 406, min: 3, max: 8, text: "猎头推荐竞对高薪职位 (+50%)。", choices: [ { label: "礼貌拒绝", eff: { c: 2 }, log: "表露忠诚，留了后路。" }, { label: "偷偷发简历", eff: { s: 5, p: -5 }, log: "了解市场价也是好的。" } ]},
+            { id: 407, min: 0, max: 8, text: "续命的咖啡机坏了。", choices: [ { label: "外卖星巴克", eff: { m: -0.05, e: 2 }, log: "钱包受损，精神回归。" }, { label: "喝白开水", eff: { s: -10, p: -5 }, log: "昏昏欲睡，效率极低。" } ]},
+            { id: 408, min: 1, max: 6, text: "Excel 公式全变成 #REF!。", choices: [ { label: "狂按 Ctrl+Z", eff: { s: 5 }, log: "救回来了！感谢微软！" }, { label: "手动查错", eff: { e: -5, s: -10 }, log: "眼睛瞎了，删错一列。" } ]},
+            { id: 409, min: 4, max: 9, text: "难搞客户投诉你的态度。", choices: [ { label: "卑微道歉", eff: { s: -15, p: 5 }, log: "尊严扫地，客户消气。" }, { label: "据理力争", eff: { s: 5, p: -10 }, log: "你爽了，老板收投诉信。" } ]},
+            { id: 410, min: 0, max: 5, text: "赶 Deadline 连吃一周外卖。", choices: [ { label: "继续吃", eff: { e: -10, p: 5 }, log: "胃开始抗议，隐隐作痛。" }, { label: "准时下班做饭", eff: { e: 5, p: -5 }, log: "久违烟火气，活过来了。" } ]},
+            { id: 411, min: 2, max: 7, text: "电脑突然强制系统更新。", choices: [ { label: "对着屏幕发呆", eff: { s: 5, p: -5 }, log: "强制摸鱼，天意如此。" }, { label: "借同事电脑", eff: { p: 2, c: -2 }, log: "同事借了，但脸色不好。" } ]},
+            { id: 412, min: 1, max: 8, text: "电梯偶遇大老板，气氛凝固。", choices: [ { label: "低头装死", eff: { c: -2 }, log: "没敢抬头，空气安静。" }, { label: "硬聊天气", eff: { c: 5, s: -5 }, log: "尬聊两句，老板记住了。" } ]},
+
+            // New 500+
+            { "id": 501, "min": 0, "max": 8, "text": "公司更换了审计软件，新系统极其难用。", "choices": [{ "label": "熬夜自学", "eff": { "e": -10, "p": 5 }, "log": "掌握了新工具，但掉了几根头发。" }, { "label": "沿用旧底稿", "eff": { "p": -5, "s": 5 }, "log": "被 Manager 发现格式不对，挨骂了。" }] },
+            { "id": 502, "min": 2, "max": 6, "text": "带你的小朋友突然离职了，留下一个烂摊子。", "choices": [{ "label": "硬着头皮接手", "eff": { "e": -20, "p": 10 }, "log": "连续通宵一周，填上了坑。" }, { "label": "向上面申请借人", "eff": { "c": -5, "s": -5 }, "log": "借到了人，但被标记为'管理能力弱'。" }] },
+            { "id": 503, "min": 0, "max": 5, "text": "出差住的酒店隔音极差，隔壁吵了一整晚。", "choices": [{ "label": "忍了，戴耳塞", "eff": { "e": -10, "s": 10 }, "log": "整晚没睡好，第二天精神萎靡。" }, { "label": "投诉换房", "eff": { "e": -5, "m": -0.05 }, "log": "折腾到半夜才睡，打车费自理。" }] },
+            { "id": 504, "min": 4, "max": 8, "text": "合伙人想让你帮忙处理一点他的'私人税务'问题。", "choices": [{ "label": "帮忙搞定", "eff": { "c": 15, "s": 5 }, "log": "成为了合伙人的心腹。" }, { "label": "委婉拒绝", "eff": { "c": -10 }, "log": "合规满分，但合伙人脸色难看。" }] },
+            { "id": 505, "min": 1, "max": 8, "text": "长期伏案工作，你的颈椎发出了抗议。", "choices": [{ "label": "去按摩店", "eff": { "m": -0.2, "e": 10 }, "log": "花钱消灾，身体舒服多了。" }, { "label": "贴膏药坚持", "eff": { "e": -5 }, "log": "治标不治本，转头时咔咔响。" }] },
+            { "id": 506, "min": 0, "max": 3, "text": "Manager 让你帮忙帮他家孩子给幼儿园做个 PPT。", "choices": [{ "label": "做得花里胡哨", "eff": { "c": 10, "p": -2 }, "log": "Manager 很有面子，你成了御用美工。" }, { "label": "假装太忙", "eff": { "c": -5 }, "log": "Manager 觉得你不懂事。" }] },
+            { "id": 507, "min": 3, "max": 7, "text": "猎头说有一个去国企内审的机会，朝九晚五。", "choices": [{ "label": "去聊聊", "eff": { "s": 10, "p": -5 }, "log": "只有工资的一半，你犹豫了。" }, { "label": "还是喜欢搞钱", "eff": { "m": 0.5, "e": -5 }, "log": "继续留在四大卷。" }] },
+            { "id": 508, "min": 0, "max": 8, "text": "你发现上周报销的打车票里混进了一张 KTV 的发票。", "choices": [{ "label": "主动撤回说明", "eff": { "p": 2 }, "log": "财务夸你诚实。" }, { "label": "赌一把看不见", "eff": { "c": -10, "s": 10 }, "log": "被合规部抽查到了，通报批评。" }] },
+            { "id": 509, "min": 2, "max": 6, "text": "项目组聚餐，大家都在喝酒，你酒精过敏。", "choices": [{ "label": "以茶代酒", "eff": { "c": -5 }, "log": "大家觉得你扫兴。" }, { "label": "舍命陪君子", "eff": { "e": -15, "c": 10 }, "log": "喝进了医院，但融入了圈子。" }] },
+            { "id": 510, "min": 5, "max": 9, "text": "经济下行，所里传闻要'优化' 10% 的人员。", "choices": [{ "label": "疯狂压榨下属", "eff": { "p": 10, "c": -10 }, "log": "业绩好看了，但人心散了。" }, { "label": "保护组员", "eff": { "c": 15, "p": -5 }, "log": "你可能在名单上，但大家爱戴你。" }] },
+            { "id": 511, "min": 0, "max": 4, "text": "你的租房合同到期，房东要涨价 20%。", "choices": [{ "label": "搬家去郊区", "eff": { "m": 0.2, "e": -10 }, "log": "通勤时间变长，每天少睡一小时。" }, { "label": "接受涨价", "eff": { "m": -0.5, "s": -5 }, "log": "钱包流血，但保住了睡眠。" }] },
+            { "id": 512, "min": 1, "max": 8, "text": "同事在群里发红包，你手快抢了个最大的。", "choices": [{ "label": "发个表情包", "eff": { "c": 2 }, "log": "运气不错，心情变好了。" }, { "label": "发个更大的回去", "eff": { "m": -0.1, "c": 5 }, "log": "老板大气！" }] },
+            { "id": 513, "min": 0, "max": 5, "text": "需要在客户的一堆纸质凭证仓库里找一张发票。", "choices": [{ "label": "地毯式搜索", "eff": { "e": -10, "p": 5 }, "log": "吸了一鼻子灰，终于找到了。" }, { "label": "抽样跳过", "eff": { "s": -5, "p": -5 }, "log": "赌运气，心里不踏实。" }] },
+            { "id": 514, "min": 2, "max": 7, "text": "你的 Excel 技能太强，被隔壁组借去帮忙清洗数据。", "choices": [{ "label": "帮忙", "eff": { "c": 5, "e": -5 }, "log": "成了工具人，但欠了个人情。" }, { "label": "教会徒弟", "eff": { "e": -2, "c": 2 }, "log": "授人以渔，以后不烦你了。" }] },
+            { "id": 515, "min": 4, "max": 8, "text": "客户想邀请你去他们公司做财务经理。", "choices": [{ "label": "心动，留个微信", "eff": { "c": 5 }, "log": "这是一条不错的后路。" }, { "label": "婉拒", "eff": { "p": 5 }, "log": "客户觉得你专业度高。" }] },
+            { "id": 516, "min": 0, "max": 8, "text": "公司楼下的咖啡店倒闭了。", "choices": [{ "label": "买速溶咖啡", "eff": { "m": 0.05, "s": -2 }, "log": "难喝，但省钱。" }, { "label": "自带手冲装备", "eff": { "e": -2, "s": 5 }, "log": "很有格调，但很麻烦。" }] },
+            { "id": 517, "min": 1, "max": 6, "text": "审计现场只有一张会议桌，挤了 10 个人。", "choices": [{ "label": "抢占插座位置", "eff": { "e": 2 }, "log": "电脑满电，心情舒畅。" }, { "label": "缩在角落", "eff": { "e": -5 }, "log": "腰酸背痛，鼠标都施展不开。" }] },
+            { "id": 518, "min": 3, "max": 8, "text": "发现 Senior Manager 把你的功劳据为己有。", "choices": [{ "label": "越级汇报", "eff": { "p": 5, "c": -20 }, "log": "赢了道理，输了政治。" }, { "label": "忍气吞声", "eff": { "s": -15, "c": 5 }, "log": "SM 觉得你'懂事'，以后会补偿你。" }] },
+            { "id": 519, "min": 0, "max": 5, "text": "加班到深夜，打不到车。", "choices": [{ "label": "等排队 200 位", "eff": { "e": -5 }, "log": "到家都 3 点了。" }, { "label": "加价 50 叫专车", "eff": { "m": -0.05, "e": 5 }, "log": "为了睡觉，值得。" }] },
+            { "id": 520, "min": 2, "max": 8, "text": "你的电脑蓝屏了，IT 说硬盘坏了。", "choices": [{ "label": "崩溃大哭", "eff": { "s": -20 }, "log": "发泄出来了，但数据没了。" }, { "label": "拿出移动硬盘", "eff": { "p": 5 }, "log": "备份是个好习惯！" }] }
         ];
 
         // --- 2. STATE ---
@@ -566,12 +553,15 @@
             rankIdx: 0,
             stats: { energy: 100, money: 0.8, stress: 50, conn: 0, perf: 50 },
             history: [], // Stores event IDs
-            ap: 6, // Reduced to 6
+            ap: 6,
             allocations: {},
             lastMaxAction: null,
             promoChance: 0,
-            eventQueue: []
+            eventQueue: [],
+            quarterBuff: null // { name, type: 'busy'|'slack'|'insp' }
         };
+
+        let isYearEndProcessing = false;
 
         // --- 3. DOM ELEMENTS ---
         const ui = {
@@ -588,6 +578,7 @@
             dispName: document.getElementById('disp-name'),
             dispTime: document.getElementById('disp-time'),
             dispRank: document.getElementById('disp-rank'),
+            buffTag: document.getElementById('buff-tag'),
 
             bars: {
                 energy: document.getElementById('bar-energy'),
@@ -637,12 +628,21 @@
 
         function startQuarter() {
             if(state.quarter > 4) {
-                doYearEnd();
+                if(!isYearEndProcessing) doYearEnd();
                 return;
             }
 
             renderStats();
-            state.ap = 6; // Set to 6
+
+            // Clean up previous state
+            ui.cardContent.innerHTML = '';
+            ui.actionArea.innerHTML = '';
+
+            // Apply Quarter Buff
+            applyQuarterBuff();
+
+            // Setup AP
+            state.ap = 6 + (state.quarterBuff && state.quarterBuff.type === 'busy' ? 2 : (state.quarterBuff && state.quarterBuff.type === 'slack' ? -2 : 0));
             state.allocations = {};
 
             ui.actionListContainer.classList.remove('hidden');
@@ -650,6 +650,28 @@
 
             renderActionList();
             updateAPUI();
+        }
+
+        function applyQuarterBuff() {
+            state.quarterBuff = null;
+            ui.buffTag.style.display = 'none';
+            ui.buffTag.className = '';
+
+            if (Math.random() < 0.3) {
+                const rand = Math.random();
+                if (rand < 0.33) {
+                    state.quarterBuff = { name: '状态: 忙季', type: 'busy' };
+                    ui.buffTag.className = 'buff-busy';
+                } else if (rand < 0.66) {
+                    state.quarterBuff = { name: '状态: 淡季', type: 'slack' };
+                    ui.buffTag.className = 'buff-slack';
+                } else {
+                    state.quarterBuff = { name: '状态: 监管检查', type: 'insp' };
+                    ui.buffTag.className = 'buff-insp';
+                }
+                ui.buffTag.textContent = state.quarterBuff.name;
+                ui.buffTag.style.display = 'inline-block';
+            }
         }
 
         function getActionPool() {
@@ -693,7 +715,9 @@
         };
 
         function updateAPUI() {
-            ui.apCount.textContent = `AP: ${state.ap} / 6`;
+            const max = 6 + (state.quarterBuff && state.quarterBuff.type === 'busy' ? 2 : (state.quarterBuff && state.quarterBuff.type === 'slack' ? -2 : 0));
+            ui.apCount.textContent = `AP: ${state.ap} / ${max}`;
+
             for (let id in state.allocations) {
                 document.getElementById(`val-${id}`).textContent = state.allocations[id];
                 const row = document.getElementById(`row-${id}`);
@@ -707,7 +731,7 @@
                 plusBtn.disabled = (state.ap <= 0);
             });
 
-            const usedAP = 6 - state.ap;
+            const usedAP = max - state.ap;
             const btn = document.getElementById('btn-run-q');
             if (!btn) {
                 ui.actionArea.innerHTML = `<button class="btn-main" id="btn-run-q">执行计划</button>`;
@@ -730,7 +754,6 @@
             ui.cardContent.innerHTML = '';
             ui.actionArea.innerHTML = '';
 
-            // 1. Calculate Results Aggregately
             const pool = getActionPool();
             let maxAP = 0;
             let currentMaxAction = null;
@@ -746,37 +769,60 @@
                     currentMaxAction = act.id;
                 }
 
-                // Diminishing Returns: Threshold > 3 (50% of 6)
+                // Diminishing Returns logic
                 let isDiminished = false;
+                // Threshold depends on base? Fixed at >3 for now (half of 6)
                 if (state.lastMaxAction === act.id && count > 3) {
                     isDiminished = true;
                 }
 
                 actionSummary.push(`${act.name} x${count} ${isDiminished ? '<span style="color:red">(效率降低)</span>' : ''}`);
 
+                // Apply Buff Modifiers
+                let buffMod = { cost: 1, gain: 1, p_flat: 0 };
+                if (state.quarterBuff) {
+                    if (state.quarterBuff.type === 'busy') buffMod.cost = 2; // Extra cost
+                    if (state.quarterBuff.type === 'slack') buffMod.gain = 1; // Base gain, handle special rule below
+                    if (state.quarterBuff.type === 'insp' && (act.id === 'slack' || act.id === 'gossip')) buffMod.p_flat = -20;
+                }
+
                 for (let k in act.base) {
                     let val = act.base[k] * count;
+
+                    // Buffs
+                    if (state.quarterBuff && state.quarterBuff.type === 'busy' && (k === 'e' || k === 's') && val < 0) {
+                        val *= 1.5; // "Extra cost" approximation
+                    }
+                    // Slack: recover stress per AP? Not implemented on base action, simpler to just add net effect at end or assume built into AP reduction?
+                    // Prompt: "Slack Season: AP -2, but recover 2 stress per AP used".
+                    // We can add this to netEffects later based on total AP used.
+
                     if (isDiminished) {
                         const isCost = (val < 0 && k !== 's') || (val > 0 && k === 's');
                         if (isCost) val *= 1.5;
                         else val *= 0.5;
                     }
+
                     if (k !== 'promo') netEffects[k] += val;
                 }
 
+                if (buffMod.p_flat) netEffects.p += buffMod.p_flat;
                 if (act.base.promo) state.promoChance += (act.base.promo * count);
+            }
+
+            // Slack Season Recovery
+            if (state.quarterBuff && state.quarterBuff.type === 'slack') {
+                const totalUsed = activeActions.reduce((sum, a) => sum + state.allocations[a.id], 0);
+                netEffects.s -= (totalUsed * 2);
             }
 
             state.lastMaxAction = currentMaxAction;
 
-            // Salary
             const pay = SALARY[state.rankIdx];
             netEffects.m += pay;
 
-            // Apply Net Effects
             applyEffect(netEffects);
 
-            // Show Quarterly Report Modal
             ui.modal.classList.remove('hidden');
             ui.summaryBox.classList.remove('hidden');
 
@@ -794,7 +840,7 @@
         }
 
         function pickRandomEvent() {
-            // Anti-Repetition: Exclude all in history
+            // Anti-Repetition: Queue Size 30
             const pool = EVENTS.filter(e =>
                 state.rankIdx >= e.min &&
                 state.rankIdx <= e.max &&
@@ -803,14 +849,10 @@
 
             let event;
             if(pool.length === 0) {
-                // If pool exhausted, clear oldest history to allow reuse
-                // OR strict logic: "Must not be in history".
-                // If history is too full, shift it.
                 if (state.history.length > 0) {
-                    state.history.shift(); // Remove oldest
-                    return pickRandomEvent(); // Retry
+                    state.history.shift();
+                    return pickRandomEvent();
                 }
-                // Fallback if really empty (shouldn't happen with massive pool)
                 const anyPool = EVENTS.filter(e => state.rankIdx >= e.min && state.rankIdx <= e.max);
                 event = anyPool[Math.floor(Math.random() * anyPool.length)];
             } else {
@@ -819,9 +861,8 @@
 
             if(event) {
                 state.history.push(event.id);
-                // Keep history size reasonable but large enough to prevent repeats (e.g. 50% of pool)
-                // With ~30 events, size 15 is safe.
-                if(state.history.length > 15) state.history.shift();
+                // Queue limit 30
+                if(state.history.length > 30) state.history.shift();
             }
             return event;
         }
@@ -903,7 +944,6 @@
                     const sign = val > 0 ? '+' : '';
                     const cls = getDiffClass(k, val);
                     const unit = k === 'm' ? '万' : '';
-                    // Block style or Inline
                     parts.push(isBlock
                         ? `<div style="margin-bottom:4px;"><span class="${cls}" style="font-weight:bold;">${label} ${sign}${val}${unit}</span></div>`
                         : `<span class="${cls}">${label} ${sign}${val}${unit}</span>`
@@ -963,6 +1003,9 @@
 
         // --- 7. YEAR END ---
         function doYearEnd() {
+            if (isYearEndProcessing) return;
+            isYearEndProcessing = true;
+
             ui.modal.classList.remove('hidden');
             ui.loginBox.classList.add('hidden');
             ui.summaryBox.classList.add('hidden');
@@ -1045,7 +1088,11 @@
                 state.stats.stress = Math.max(0, state.stats.stress - 20);
                 state.stats.perf = 50;
 
+                isYearEndProcessing = false;
                 ui.modal.classList.add('hidden');
+
+                // Clear state
+                state.eventQueue = [];
                 startQuarter();
             });
         }
