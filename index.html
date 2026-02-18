@@ -335,6 +335,12 @@
             <div id="ye-content" style="text-align:left; margin: 20px 0; font-size:14px; line-height:1.5; color:#333;"></div>
             <button class="btn-main" id="btn-next-year">Start Next Year</button>
         </div>
+        <!-- Summary Modal (Quarterly Report) -->
+        <div class="modal-box hidden" id="summary-box">
+            <h2 style="margin:0 0 10px;">季度结算报告</h2>
+            <div id="summary-content" style="text-align:left; margin: 20px 0; font-size:14px; line-height:1.6; color:#333;"></div>
+            <button class="btn-main" id="btn-confirm-summary">确认 (Confirm)</button>
+        </div>
     </div>
 
     <!-- UI STRUCTURE -->
@@ -382,7 +388,7 @@
             <div id="action-list-container" class="hidden">
                 <div class="ap-header">
                     <span>行动分配</span>
-                    <span class="ap-display" id="ap-count">AP: 10 / 10</span>
+                    <span class="ap-display" id="ap-count">AP: 6 / 6</span>
                 </div>
                 <div id="actions-list">
                     <!-- Actions injected here -->
@@ -407,9 +413,6 @@
             e: '精力', m: '财富', s: '压力', c: '人脉', p: '绩效', promo: '晋升概率'
         };
 
-        // Action Pools by Career Stage
-        // Each action has base cost/gain per 1 AP.
-        // Some might scale differently but linear for now is fine.
         const ACTION_POOLS = {
             associate: [
                 { id: 'grunt', name: "疯狂抽凭 (Grunt Work)", desc: "绩效++, 精力--", base: { e: -5, p: 4 } },
@@ -437,8 +440,9 @@
             ]
         };
 
-        // Events Pool (same as before)
+        // Expanded Events Pool with 12 New "White Collar" Events
         const EVENTS = [
+            // Original Converted
             { id: 1, min:0, max:2, text: "打印机卡纸了，墨粉洒了一地。", choices: [
                 { label: "自己动手修", eff: { e:-10, p:5 }, log: "Manager 夸你 Handy。" },
                 { label: "找 Admin", eff: { m:-0.05, c:5 }, log: "请 Admin 喝奶茶搞定。" }
@@ -478,7 +482,80 @@
             { id: 202, min: 1, max: 6, text: "约了对象晚饭，Manager 突然开会。", choices: [
                   { label: "放鸽子回公司", eff: { s: -10, c: -5, p: 5 }, log: "对象拉黑，底稿保住。" },
                   { label: "假装没看见", eff: { s: 10, c: 5, p: -10 }, log: "约会成功，被骂一顿。" }
-            ]}
+            ]},
+            // New 12 Generic White Collar Events
+            {
+                id: 401, min: 0, max: 8, text: "发给全组的邮件忘加附件了。", choices: [
+                  { label: "立刻撤回", eff: { s: -5 }, log: "手速够快，没人发现。" },
+                  { label: "补发一封", eff: { p: -2 }, log: "发了两封，显得不专业。" }
+                ]
+            },
+            {
+                id: 402, min: 1, max: 6, text: "周五 17:55，客户来紧急需求。", choices: [
+                  { label: "假装没看见", eff: { s: 10, c: -5 }, log: "周末爽了，周一被夺命Call。" },
+                  { label: "通宵搞定", eff: { e: -10, p: 5 }, log: "客户满意，但错过了聚餐。" }
+                ]
+            },
+            {
+                id: 403, min: 0, max: 8, text: "VPN 崩了，IT 说不知道多久修好。", choices: [
+                  { label: "手机热点硬连", eff: { m: -0.1, p: 5 }, log: "流量燃烧，赶上进度。" },
+                  { label: "楼下喝咖啡", eff: { s: 5, p: -5 }, log: "难得休息，有点心虚。" }
+                ]
+            },
+            {
+                id: 404, min: 2, max: 7, text: "开了一下午扯皮会，无结论。", choices: [
+                  { label: "主动整理纪要", eff: { p: 5, s: -5 }, log: "老板觉得你总结能力强。" },
+                  { label: "私下疯狂吐槽", eff: { s: 5, c: 5 }, log: "在小群骂得很开心。" }
+                ]
+            },
+            {
+                id: 405, min: 0, max: 5, text: "忘带工牌，被保安拦住。", choices: [
+                  { label: "叫同事来接", eff: { c: -2, s: -5 }, log: "被同事嘲笑了一整天。" },
+                  { label: "试图尾随混入", eff: { s: 5, p: -2 }, log: "被发现了，极其尴尬。" }
+                ]
+            },
+            {
+                id: 406, min: 3, max: 8, text: "猎头推荐竞对高薪职位 (+50%)。", choices: [
+                  { label: "礼貌拒绝", eff: { c: 2 }, log: "表露忠诚，留了后路。" },
+                  { label: "偷偷发简历", eff: { s: 5, p: -5 }, log: "了解市场价也是好的。" }
+                ]
+            },
+            {
+                id: 407, min: 0, max: 8, text: "续命的咖啡机坏了。", choices: [
+                  { label: "外卖星巴克", eff: { m: -0.05, e: 2 }, log: "钱包受损，精神回归。" },
+                  { label: "喝白开水", eff: { s: -10, p: -5 }, log: "昏昏欲睡，效率极低。" }
+                ]
+            },
+            {
+                id: 408, min: 1, max: 6, text: "Excel 公式全变成 #REF!。", choices: [
+                  { label: "狂按 Ctrl+Z", eff: { s: 5 }, log: "救回来了！感谢微软！" },
+                  { label: "手动查错", eff: { e: -5, s: -10 }, log: "眼睛瞎了，删错一列。" }
+                ]
+            },
+            {
+                id: 409, min: 4, max: 9, text: "难搞客户投诉你的态度。", choices: [
+                  { label: "卑微道歉", eff: { s: -15, p: 5 }, log: "尊严扫地，客户消气。" },
+                  { label: "据理力争", eff: { s: 5, p: -10 }, log: "你爽了，老板收投诉信。" }
+                ]
+            },
+            {
+                id: 410, min: 0, max: 5, text: "赶 Deadline 连吃一周外卖。", choices: [
+                  { label: "继续吃", eff: { e: -10, p: 5 }, log: "胃开始抗议，隐隐作痛。" },
+                  { label: "准时下班做饭", eff: { e: 5, p: -5 }, log: "久违烟火气，活过来了。" }
+                ]
+            },
+            {
+                id: 411, min: 2, max: 7, text: "电脑突然强制系统更新。", choices: [
+                  { label: "对着屏幕发呆", eff: { s: 5, p: -5 }, log: "强制摸鱼，天意如此。" },
+                  { label: "借同事电脑", eff: { p: 2, c: -2 }, log: "同事借了，但脸色不好。" }
+                ]
+            },
+            {
+                id: 412, min: 1, max: 8, text: "电梯偶遇大老板，气氛凝固。", choices: [
+                  { label: "低头装死", eff: { c: -2 }, log: "没敢抬头，空气安静。" },
+                  { label: "硬聊天气", eff: { c: 5, s: -5 }, log: "尬聊两句，老板记住了。" }
+                ]
+            }
         ];
 
         // --- 2. STATE ---
@@ -488,10 +565,10 @@
             quarter: 1,
             rankIdx: 0,
             stats: { energy: 100, money: 0.8, stress: 50, conn: 0, perf: 50 },
-            history: [],
-            ap: 10,
-            allocations: {}, // { actionId: count }
-            lastMaxAction: null, // ID of action with most AP last turn
+            history: [], // Stores event IDs
+            ap: 6, // Reduced to 6
+            allocations: {},
+            lastMaxAction: null,
             promoChance: 0,
             eventQueue: []
         };
@@ -501,15 +578,17 @@
             modal: document.getElementById('modal-overlay'),
             loginBox: document.getElementById('login-box'),
             yeBox: document.getElementById('year-end-box'),
+            summaryBox: document.getElementById('summary-box'),
+            summaryContent: document.getElementById('summary-content'),
+            btnConfirmSummary: document.getElementById('btn-confirm-summary'),
+
             userIn: document.getElementById('username-input'),
             startBtn: document.getElementById('btn-start-game'),
 
-            // Header
             dispName: document.getElementById('disp-name'),
             dispTime: document.getElementById('disp-time'),
             dispRank: document.getElementById('disp-rank'),
 
-            // Stats
             bars: {
                 energy: document.getElementById('bar-energy'),
                 money: document.getElementById('bar-money'),
@@ -537,6 +616,18 @@
             initGame();
         };
 
+        ui.btnConfirmSummary.onclick = () => {
+            ui.summaryBox.classList.add('hidden');
+            ui.modal.classList.add('hidden');
+            // Trigger Chaos Mode
+            state.eventQueue = [];
+            for(let k=0; k<3; k++) {
+                const ev = pickRandomEvent();
+                if(ev) state.eventQueue.push(ev);
+            }
+            processEventQueue();
+        };
+
         function initGame() {
             renderStats();
             startQuarter();
@@ -545,15 +636,13 @@
         // --- 5. CORE LOOP ---
 
         function startQuarter() {
-            // Check limits
             if(state.quarter > 4) {
                 doYearEnd();
                 return;
             }
 
-            // 1. Reset UI for Decision
             renderStats();
-            state.ap = 10;
+            state.ap = 6; // Set to 6
             state.allocations = {};
 
             ui.actionListContainer.classList.remove('hidden');
@@ -564,9 +653,9 @@
         }
 
         function getActionPool() {
-            if (state.rankIdx >= 8) return ACTION_POOLS.partner; // Partner
-            if (state.rankIdx >= 5) return ACTION_POOLS.manager; // Manager
-            return ACTION_POOLS.associate; // Associate
+            if (state.rankIdx >= 8) return ACTION_POOLS.partner;
+            if (state.rankIdx >= 5) return ACTION_POOLS.manager;
+            return ACTION_POOLS.associate;
         }
 
         function renderActionList() {
@@ -577,8 +666,6 @@
                 const row = document.createElement('div');
                 row.className = 'action-row';
                 row.id = `row-${act.id}`;
-
-                // Content
                 row.innerHTML = `
                     <div class="act-info">
                         <div class="act-name">${act.name}</div>
@@ -595,28 +682,18 @@
             });
         }
 
-        // Global so onclick works
         window.modAP = function(id, delta) {
             const current = state.allocations[id];
-
-            // Check limits
-            if (delta > 0 && state.ap <= 0) return; // No AP left
-            if (delta < 0 && current <= 0) return; // Can't go negative
-
+            if (delta > 0 && state.ap <= 0) return;
+            if (delta < 0 && current <= 0) return;
             state.allocations[id] += delta;
             state.ap -= delta;
-
-            // UI Feedback
             updateAPUI();
-
-            // Vibration if supported
             if (navigator.vibrate) navigator.vibrate(10);
         };
 
         function updateAPUI() {
-            ui.apCount.textContent = `AP: ${state.ap} / 10`;
-
-            // Update counts in rows
+            ui.apCount.textContent = `AP: ${state.ap} / 6`;
             for (let id in state.allocations) {
                 document.getElementById(`val-${id}`).textContent = state.allocations[id];
                 const row = document.getElementById(`row-${id}`);
@@ -624,22 +701,18 @@
                 else row.classList.remove('active');
             }
 
-            // Update Buttons
             const pool = getActionPool();
             pool.forEach(act => {
-                // Disable + if AP is 0
                 const plusBtn = document.querySelector(`#row-${act.id} .step-btn:last-child`);
                 plusBtn.disabled = (state.ap <= 0);
             });
 
-            // Start Button Logic
-            const usedAP = 10 - state.ap;
+            const usedAP = 6 - state.ap;
             const btn = document.getElementById('btn-run-q');
             if (!btn) {
                 ui.actionArea.innerHTML = `<button class="btn-main" id="btn-run-q">执行计划</button>`;
                 document.getElementById('btn-run-q').onclick = runQuarter;
             } else {
-                // Allow start if >= 1 AP used
                 btn.disabled = (usedAP === 0);
                 if (usedAP > 0) {
                     btn.textContent = state.ap > 0 ? `执行计划 (剩余 ${state.ap} AP)` : "执行计划";
@@ -652,18 +725,18 @@
         }
 
         async function runQuarter() {
-            // UI Switch
             ui.actionListContainer.classList.add('hidden');
             ui.cardContent.classList.remove('hidden');
             ui.cardContent.innerHTML = '';
-            ui.actionArea.innerHTML = ''; // Clear button
+            ui.actionArea.innerHTML = '';
 
-            // 1. Calculate and Execute Actions
+            // 1. Calculate Results Aggregately
             const pool = getActionPool();
             let maxAP = 0;
             let currentMaxAction = null;
+            let actionSummary = [];
+            let netEffects = { e:0, m:0, s:0, c:0, p:0 };
 
-            // Filter actions with AP > 0
             const activeActions = pool.filter(a => state.allocations[a.id] > 0);
 
             for (let act of activeActions) {
@@ -673,59 +746,55 @@
                     currentMaxAction = act.id;
                 }
 
-                // Diminishing Returns Check
-                // "If > 50% AP (count > 5) on same action as lastMaxAction"
+                // Diminishing Returns: Threshold > 3 (50% of 6)
                 let isDiminished = false;
-                // Bug fix: Ensure lastMaxAction logic works across turns
-                if (state.lastMaxAction === act.id && count > 5) {
+                if (state.lastMaxAction === act.id && count > 3) {
                     isDiminished = true;
                 }
 
-                // Calculate Total Effect
-                let totalEff = {};
+                actionSummary.push(`${act.name} x${count} ${isDiminished ? '<span style="color:red">(效率降低)</span>' : ''}`);
+
                 for (let k in act.base) {
                     let val = act.base[k] * count;
-
                     if (isDiminished) {
                         const isCost = (val < 0 && k !== 's') || (val > 0 && k === 's');
                         if (isCost) val *= 1.5;
                         else val *= 0.5;
                     }
-                    totalEff[k] = val;
+                    if (k !== 'promo') netEffects[k] += val;
                 }
 
-                // Apply
-                applyEffect(totalEff);
                 if (act.base.promo) state.promoChance += (act.base.promo * count);
-
-                // Render Log
-                const diffStr = formatDiff(totalEff);
-                let logText = `投入 ${count} AP 执行了 ${act.name}。`;
-                if (isDiminished) logText += ` <span style="color:var(--accent-red);font-weight:700;">(重复过度，效率降低！)</span>`;
-
-                await typeBlock("行动结算", logText, diffStr);
-                await wait(600);
             }
 
-            // Update History Logic
             state.lastMaxAction = currentMaxAction;
 
-            // 2. Salary Logic (Passive)
+            // Salary
             const pay = SALARY[state.rankIdx];
-            applyEffect({m: pay});
+            netEffects.m += pay;
 
-            // 3. Chaos Mode: 3 Random Events
-            state.eventQueue = [];
-            for(let k=0; k<3; k++) {
-                const ev = pickRandomEvent();
-                if(ev) state.eventQueue.push(ev);
-            }
+            // Apply Net Effects
+            applyEffect(netEffects);
 
-            await wait(400);
-            processEventQueue();
+            // Show Quarterly Report Modal
+            ui.modal.classList.remove('hidden');
+            ui.summaryBox.classList.remove('hidden');
+
+            const summaryHtml = `
+                <div style="margin-bottom:15px; font-weight:600;">本季度重点：</div>
+                <ul style="padding-left:20px; margin-bottom:20px; color:#555;">
+                    ${actionSummary.map(s => `<li>${s}</li>`).join('')}
+                </ul>
+                <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
+                <div style="font-weight:600; margin-bottom:10px;">数值变动 (净值)：</div>
+                <div>${formatDiff(netEffects, true)}</div>
+                <div style="margin-top:10px; font-size:12px; color:#888;">*薪资已入账</div>
+            `;
+            ui.summaryContent.innerHTML = summaryHtml;
         }
 
         function pickRandomEvent() {
+            // Anti-Repetition: Exclude all in history
             const pool = EVENTS.filter(e =>
                 state.rankIdx >= e.min &&
                 state.rankIdx <= e.max &&
@@ -734,6 +803,14 @@
 
             let event;
             if(pool.length === 0) {
+                // If pool exhausted, clear oldest history to allow reuse
+                // OR strict logic: "Must not be in history".
+                // If history is too full, shift it.
+                if (state.history.length > 0) {
+                    state.history.shift(); // Remove oldest
+                    return pickRandomEvent(); // Retry
+                }
+                // Fallback if really empty (shouldn't happen with massive pool)
                 const anyPool = EVENTS.filter(e => state.rankIdx >= e.min && state.rankIdx <= e.max);
                 event = anyPool[Math.floor(Math.random() * anyPool.length)];
             } else {
@@ -742,7 +819,9 @@
 
             if(event) {
                 state.history.push(event.id);
-                if(state.history.length > 5) state.history.shift();
+                // Keep history size reasonable but large enough to prevent repeats (e.g. 50% of pool)
+                // With ~30 events, size 15 is safe.
+                if(state.history.length > 15) state.history.shift();
             }
             return event;
         }
@@ -814,21 +893,25 @@
             renderStats();
         }
 
-        function formatDiff(eff) {
+        function formatDiff(eff, isBlock = false) {
             if(!eff) return "";
             let parts = [];
             ['p', 'e', 'm', 's', 'c'].forEach(k => {
                 if(eff[k]) {
-                    const val = Number(eff[k].toFixed(1)); // Format nicely
+                    const val = Number(eff[k].toFixed(1));
                     const label = STAT_MAP[k];
                     const sign = val > 0 ? '+' : '';
                     const cls = getDiffClass(k, val);
                     const unit = k === 'm' ? '万' : '';
-                    parts.push(`<span class="${cls}">${label} ${sign}${val}${unit}</span>`);
+                    // Block style or Inline
+                    parts.push(isBlock
+                        ? `<div style="margin-bottom:4px;"><span class="${cls}" style="font-weight:bold;">${label} ${sign}${val}${unit}</span></div>`
+                        : `<span class="${cls}">${label} ${sign}${val}${unit}</span>`
+                    );
                 }
             });
             if(parts.length === 0) return "";
-            return `<span class="feedback-span">(${parts.join(', ')})</span>`;
+            return isBlock ? parts.join('') : `<span class="feedback-span">(${parts.join(', ')})</span>`;
         }
 
         function getDiffClass(key, val) {
@@ -882,6 +965,7 @@
         function doYearEnd() {
             ui.modal.classList.remove('hidden');
             ui.loginBox.classList.add('hidden');
+            ui.summaryBox.classList.add('hidden');
             ui.yeBox.classList.remove('hidden');
 
             const s = state.stats;
