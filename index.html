@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Big 4 Simulator: Active Decision</title>
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-XXXXXXXXXX');
+    </script>
+    <style>
+        /* --- 1. Global & Theme --- */
+        :root {
+            --bg-color: #F8F9FA;
+            --text-color: #1A1A1A;
+            --card-bg: #FFFFFF;
+            --accent-blue: #007AFF;
+            --accent-green: #34C759;
+            --accent-red: #FF3B30;
+            --accent-orange: #FF9500;
+            --accent-purple: #AF52DE;
+            --gray-light: #F2F2F7;
+            --gray-med: #8E8E93;
+            --shadow-soft: 0 8px 30px rgba(0,0,0,0.08);
+            --radius-main: 24px;
+            --font-main: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            margin: 0; padding: 0;
+            font-family: var(--font-main);
+            background: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            font-size: 16px;
+        }
+
+        /* --- 2. Sandwich Layout --- */
+
+        /* TOP: Header Redesign (Badge Style) */
+        #top-bar {
+            flex: 0 0 auto;
+            padding: 16px 20px 10px;
+            background: rgba(248, 249, 250, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 10;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .badge-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .user-name-row {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .user-name {
+            font-size: 22px;
+            font-weight: 800;
+            color: #1D1D1F;
+            letter-spacing: -0.5px;
+        }
+
+        .rank-badge {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--accent-blue);
+            text-transform: uppercase;
+        }
+
+        .game-time {
+            font-size: 12px;
+            color: var(--gray-med);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Buff Tag */
+        #buff-tag {
+            font-size: 11px; padding: 2px 8px; border-radius: 10px; margin-left: 8px; font-weight:700; display:none;
+        }
+        .buff-busy { background: #FFD60A; color: #000; }
+        .buff-slack { background: #32D74B; color: #fff; }
+        .buff-insp { background: #FF453A; color: #fff; }
+
+        /* 5-Column Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        @media (max-width: 360px) {
+            .stats-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        .stat-item { display: flex; flex-direction: column; align-items: center; }
+        .stat-label { font-size: 10px; color: var(--gray-med); font-weight: 600; margin-bottom: 4px; text-transform: uppercase; white-space: nowrap; }
+        .stat-bar-bg { width: 100%; height: 6px; background: #E5E5EA; border-radius: 3px; overflow: hidden; }
+        .stat-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+
+        .fill-energy { background: var(--accent-green); }
+        .fill-money { background: var(--accent-orange); }
+        .fill-stress { background: var(--accent-red); }
+        .fill-conn { background: var(--accent-blue); }
+        .fill-perf { background: var(--accent-purple); }
+
+        /* MIDDLE: Story Card */
+        #main-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center; /* Center card vertically */
+            padding: 20px;
+            overflow: hidden; /* No body scroll */
+        }
+
+        #story-card {
+            background: var(--card-bg);
+            width: 100%;
+            height: 100%;
+            max-width: 600px; /* Tablet constraint */
+            margin: 0 auto;
+            border-radius: var(--radius-main);
+            box-shadow: var(--shadow-soft);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #card-content {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto; /* Internal scroll */
+            font-size: 17px;
+            line-height: 1.6;
+            color: #333;
+            /* Hide scrollbar for clean look */
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        #card-content::-webkit-scrollbar { display: none; }
+
+        .text-block { margin-bottom: 16px; animation: fadeIn 0.5s ease; }
+        .text-sys { color: var(--gray-med); font-size: 14px; margin-bottom: 8px; font-weight: 600; text-transform: uppercase; }
+        .text-action { color: var(--accent-blue); font-weight: 600; }
+
+        /* Localized Feedback Styles */
+        .feedback-span { font-weight: 700; margin-left: 4px; font-size: 15px; }
+        .diff-pos { color: var(--accent-green); }
+        .diff-neg { color: var(--accent-red); }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ACTION LIST (Inside Card when active) */
+        #action-list-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .ap-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            font-size: 16px;
+            font-weight: 700;
+            color: #1D1D1F;
+            position: sticky;
+            top: 0;
+            background: var(--card-bg);
+            padding-bottom: 10px;
+            border-bottom: 1px solid #E5E5EA;
+            z-index: 5;
+        }
+
+        .ap-display {
+            background: #E8F2FF;
+            color: var(--accent-blue);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 14px;
+        }
+
+        .action-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-color);
+            border-radius: 16px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .action-row.active {
+            border-color: var(--accent-blue);
+            background: #F2F8FF;
+        }
+
+        .act-info { flex: 1; margin-right: 12px; }
+        .act-name { font-weight: 700; font-size: 15px; margin-bottom: 2px; }
+        .act-desc { font-size: 11px; color: var(--gray-med); }
+
+        .stepper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #fff;
+            padding: 4px;
+            border-radius: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .step-btn {
+            width: 32px; height: 32px;
+            border-radius: 16px;
+            border: none;
+            background: #F2F2F7;
+            color: #1D1D1F;
+            font-weight: 700;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex; justify-content: center; align-items: center;
+            touch-action: manipulation;
+        }
+        .step-btn:active { background: #E5E5EA; transform: scale(0.95); }
+        .step-btn:disabled { color: #C7C7CC; cursor: not-allowed; }
+
+        .step-val { font-weight: 700; font-size: 16px; min-width: 20px; text-align: center; }
+
+
+        /* BOTTOM: Actions */
+        #bottom-bar {
+            flex: 0 0 auto;
+            padding: 20px;
+            background: rgba(255,255,255,0.9);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: row;
+            gap: 12px;
+            z-index: 10;
+        }
+
+        .btn-main {
+            background: #1C1C1E; /* Apple black */
+            color: #fff;
+            border: none;
+            flex: 1;
+            padding: 18px;
+            border-radius: 16px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            touch-action: manipulation;
+            transition: transform 0.1s;
+        }
+        .btn-main:active { transform: scale(0.98); opacity: 0.9; }
+        .btn-main:disabled { background: #E5E5EA; color: #8E8E93; cursor: not-allowed; transform: none; }
+
+        .btn-help {
+            width: 56px;
+            background: #F2F2F7;
+            color: #1D1D1F;
+            border: none;
+            border-radius: 16px;
+            font-size: 24px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        /* CHOICES (For Random Events) */
+        .choice-btn {
+            background: var(--bg-color);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            font-weight: 600;
+            text-align: center;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .choice-btn:active { background: #E5E5EA; }
+
+        /* Modal */
+        #modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(5px);
+            z-index: 999;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .modal-box {
+            background: #fff; width: 85%; max-width: 320px; padding: 30px; border-radius: 24px; text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            max-height: 90vh; overflow-y: auto;
+        }
+        .modal-input {
+            width: 100%; padding: 12px; font-size: 16px; border: 1px solid #E5E5EA; border-radius: 10px; margin: 20px 0; outline: none; background: #F2F2F7;
+        }
+        .modal-input:focus { background: #fff; border-color: var(--accent-blue); }
+
+        .help-table { width: 100%; text-align: left; font-size: 13px; border-collapse: collapse; margin: 10px 0; }
+        .help-table th { border-bottom: 1px solid #eee; padding: 4px; color:#888; }
+        .help-table td { border-bottom: 1px solid #eee; padding: 4px; }
+
+        /* Utility */
+        .hidden { display: none !important; }
+        .type-cursor::after { content: '|'; animation: blink 1s infinite; margin-left: 2px; }
+        @keyframes blink { 50% { opacity: 0; } }
+
+    </style>
+</head>
+<body>
+
+    <!-- MODAL -->
+    <div id="modal-overlay">
+        <div class="modal-box" id="login-box">
+            <h2 style="margin:0 0 10px;">入职登记</h2>
+            <p style="color:#888; font-size:14px; margin:0;">Welcome to the Firm</p>
+            <input type="text" id="username-input" class="modal-input" placeholder="Your English Name" maxlength="10">
+            <button class="btn-main" id="btn-start-game">Sign Offer</button>
+        </div>
+        <div class="modal-box hidden" id="year-end-box">
+            <h2 id="ye-title" style="margin:0 0 10px;">Year End</h2>
+            <div id="ye-content" style="text-align:left; margin: 20px 0; font-size:14px; line-height:1.5; color:#333;"></div>
+            <button class="btn-main" id="btn-next-year">Start Next Year</button>
+        </div>
+        <!-- Summary Modal -->
+        <div class="modal-box hidden" id="summary-box">
+            <h2 style="margin:0 0 10px;">季度结算报告</h2>
+            <div id="summary-content" style="text-align:left; margin: 20px 0; font-size:14px; line-height:1.6; color:#333;"></div>
+            <button class="btn-main" id="btn-confirm-summary">确认 (Confirm)</button>
+        </div>
+        <!-- Help Modal -->
+        <div class="modal-box hidden" id="help-box">
+            <h2 style="margin:0 0 10px;">员工手册</h2>
+            <div style="text-align:left; font-size:13px; line-height:1.6; color:#333;">
+                <p><strong>核心指标：</strong></p>
+                <ul style="padding-left:20px; margin:5px 0;">
+                    <li>精力 = 血条 (Health)</li>
+                    <li>压力 = San值 (Sanity)</li>
+                    <li>人脉 = 升职器 (Connection)</li>
+                    <li>绩效 = 生死线 (Performance)</li>
+                </ul>
+                <p><strong>晋升条件：</strong></p>
+                <table class="help-table">
+                    <tr><th>阶梯</th><th>要求</th></tr>
+                    <tr><td>A -> S</td><td>绩效 > 80</td></tr>
+                    <tr><td>S -> M</td><td>绩效 > 80, 人脉 > 60</td></tr>
+                    <tr><td>M -> Par</td><td>人脉 > 90, 压力 < 50</td></tr>
+                </table>
+                <p><strong>失败条件 (Game Over)：</strong></p>
+                <ul style="padding-left:20px; margin:5px 0; color:var(--accent-red);">
+                    <li>精力 < 0 (过劳)</li>
+                    <li>压力 > 100 (崩溃)</li>
+                    <li>财富 < -5 (破产)</li>
+                    <li>绩效 < 30 (劝退)</li>
+                </ul>
+            </div>
+            <button class="btn-main" onclick="document.getElementById('help-box').classList.add('hidden')">关闭</button>
+        </div>
+    </div>
+
+    <!-- UI STRUCTURE -->
+    <div id="top-bar">
+        <div class="badge-header">
+            <div class="user-info">
+                <div class="user-name-row">
+                    <div class="user-name" id="disp-name">Guest</div>
+                    <div class="rank-badge" id="disp-rank">A1</div>
+                </div>
+                <div class="game-time">
+                    <span id="disp-time">第 1 年 Q1</span>
+                    <span id="buff-tag"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-label" style="color:var(--accent-purple)">绩效</div>
+                <div class="stat-bar-bg"><div class="stat-bar-fill fill-perf" id="bar-perf" style="width:50%"></div></div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">精力</div>
+                <div class="stat-bar-bg"><div class="stat-bar-fill fill-energy" id="bar-energy" style="width:100%"></div></div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">压力</div>
+                <div class="stat-bar-bg"><div class="stat-bar-fill fill-stress" id="bar-stress" style="width:50%"></div></div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">人脉</div>
+                <div class="stat-bar-bg"><div class="stat-bar-fill fill-conn" id="bar-conn" style="width:0%"></div></div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">财富</div>
+                <div class="stat-bar-bg"><div class="stat-bar-fill fill-money" id="bar-money" style="width:10%"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="main-area">
+        <div id="story-card">
+            <!-- Content injected here -->
+            <div id="card-content"></div>
+
+            <!-- AP Action List (Overlay or Replacement) -->
+            <div id="action-list-container" class="hidden">
+                <div class="ap-header">
+                    <span>行动分配</span>
+                    <span class="ap-display" id="ap-count">AP: 6 / 6</span>
+                </div>
+                <div id="actions-list">
+                    <!-- Actions injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="bottom-bar">
+        <button class="btn-help" onclick="document.getElementById('help-box').classList.remove('hidden')">?</button>
+        <div id="action-area" style="flex:1;">
+            <!-- Buttons injected here -->
+            <button class="btn-main" id="btn-action">Action</button>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. CONFIG & DATA ---
+        const RANKS = ['Audit Associate 1', 'Audit Associate 2', 'Senior 1', 'Senior 2', 'Senior 3', 'Manager 1', 'Manager 2', 'Senior Manager', 'Partner'];
+        const SALARY = [2.4, 3.0, 4.5, 5.4, 6.0, 9.0, 10.5, 15.0, 30.0];
+
+        const STAT_MAP = {
+            e: '精力', m: '财富', s: '压力', c: '人脉', p: '绩效', promo: '晋升概率'
+        };
+
+        const ACTION_POOLS = {
+            associate: [
+                { id: 'grunt', name: "疯狂抽凭 (Grunt Work)", desc: "绩效++, 精力--", base: { e: -5, p: 4 } },
+                { id: 'study', name: "备考CPA (Study)", desc: "精力--, 晋升%", base: { e: -4, promo: 3 } },
+                { id: 'slack', name: "带薪摸鱼 (Slack)", desc: "精力++, 绩效-", base: { e: 5, p: -2 } },
+                { id: 'admin', name: "贴发票报销 (Admin)", desc: "压力+, 绩效+", base: { s: 3, p: 2 } },
+                { id: 'gossip', name: "八卦社交 (Gossip)", desc: "人脉+, 财富-", base: { c: 3, m: -0.05 } },
+                { id: 'kissup', name: "讨好前辈 (Kiss Up)", desc: "绩效+, 人脉+", base: { p: 2, c: 2 } }
+            ],
+            manager: [
+                { id: 'review', name: "Review底稿 (QC)", desc: "精力--, 绩效++", base: { e: -6, p: 5 } },
+                { id: 'collect', name: "催客户回款 (Collection)", desc: "压力++, 绩效+", base: { s: 5, p: 3 } },
+                { id: 'pua', name: "PUA小朋友 (Mgmt)", desc: "绩效+, 人脉-", base: { p: 3, c: -2 } },
+                { id: 'report', name: "向Par汇报 (Report)", desc: "压力+, 人脉++", base: { s: 4, c: 4 } },
+                { id: 'blame', name: "甩锅 (Blame Shift)", desc: "绩效+, 压力-", base: { p: 2, s: -3 } },
+                { id: 'slack', name: "摸鱼 (Slack)", desc: "精力++, 绩效-", base: { e: 5, p: -3 } }
+            ],
+            partner: [
+                { id: 'bd', name: "打高尔夫BD (Sales)", desc: "人脉++, 财富-", base: { c: 6, m: -0.2 } },
+                { id: 'townhall', name: "演讲画饼 (Townhall)", desc: "绩效+, 精力-", base: { p: 4, e: -2 } },
+                { id: 'politics', name: "高层内斗 (Politics)", desc: "压力++, 人脉+", base: { s: 8, c: 5 } },
+                { id: 'cut', name: "裁员优化 (Cost Cutting)", desc: "绩效++, 人脉--", base: { p: 8, c: -5 } },
+                { id: 'sabbatical', name: "休长假 (Sabbatical)", desc: "压力--, 精力++", base: { s: -10, e: 10 } },
+                { id: 'pr', name: "参加峰会 (PR)", desc: "人脉++, 绩效+", base: { c: 4, p: 2 } }
+            ]
+        };
+
+        const EVENTS = [
+            // Old ...
+            { id: 1, min:0, max:2, text: "打印机卡纸了，墨粉洒了一地。", choices: [ { label: "自己动手修", eff: { e:-10, p:5 }, log: "Manager 夸你 Handy。" }, { label: "找 Admin", eff: { m:-0.05, c:5 }, log: "请 Admin 喝奶茶搞定。" } ]},
+            { id: 2, min:0, max:3, text: "报销单贴错了，财务退回。", choices: [ { label: "通宵重贴", eff: { e:-15, s:10 }, log: "强迫症发作，终于贴齐。" }, { label: "不管了", eff: { p:-10 }, log: "亏了打车费，心累。" } ]},
+            { id: 3, min:0, max:2, text: "客户财务大姐不给资料。", choices: [ { label: "买咖啡哄她", eff: { m:-0.05, c:5 }, log: "大姐开心了，给了钥匙。" }, { label: "向 Manager 告状", eff: { c:-5, p:-5 }, log: "Manager 觉得你太嫩。" } ]},
+            { id: 4, min:0, max:8, text: "Excel 未响应，没保存。", choices: [ { label: "绝望等待", eff: { s:20 }, log: "奇迹发生！它恢复了！" }, { label: "强制关闭", eff: { e:-20, p:5 }, log: "凭记忆重做，手速如飞。" } ]},
+            { id: 10, min:2, max:4, text: "小朋友（A1）突然哭了。", choices: [ { label: "安抚并代劳", eff: { e:-20, c:10 }, log: "你是神仙 Senior，自己填坑。" }, { label: "严厉批评", eff: { p:-5, c:-10 }, log: "小朋友直接旷工。" } ]},
+            { id: 11, min:2, max:5, text: "猎头联系你，工资涨 50%。", choices: [ { label: "请假面试", eff: { p:-10, m:0.5 }, log: "面试过了，有点心动。" }, { label: "拒绝诱惑", eff: { p:10, s:10 }, log: "为了合伙人梦想，忍了。" } ]},
+            { id: 20, min:5, max:8, text: "发现合伙人迷信八字。", choices: [ { label: "聊玄学", eff: { c:20 }, log: "合伙人引为知己。" }, { label: "装傻", eff: { p:5 }, log: "保持专业距离。" } ]},
+            { id: 101, min:0, max:8, text: "周末加班，空调坏了。", choices: [ { label: "回家做", eff: { e:5 }, log: "舒服了，但效率变低。" }, { label: "坚持到底", eff: { e:-10, p:5 }, log: "汗流浃背，感动中国。" } ]},
+            { id: 201, min: 0, max: 8, text: "本季度流感肆虐，组里倒了一半。", choices: [ { label: "去医院挂水", eff: { e: 10, m: -0.2, p: -5 }, log: "身体好转，存款变少。" }, { label: "吞布洛芬继续干", eff: { e: -15, s: -5, p: 5 }, log: "你是真正的钢铁战士。" } ]},
+            { id: 202, min: 1, max: 6, text: "约了对象晚饭，Manager 突然开会。", choices: [ { label: "放鸽子回公司", eff: { s: -10, c: -5, p: 5 }, log: "对象拉黑，底稿保住。" }, { label: "假装没看见", eff: { s: 10, c: 5, p: -10 }, log: "约会成功，被骂一顿。" } ]},
+            { id: 401, min: 0, max: 8, text: "发给全组的邮件忘加附件了。", choices: [ { label: "立刻撤回", eff: { s: -5 }, log: "手速够快，没人发现。" }, { label: "补发一封", eff: { p: -2 }, log: "发了两封，显得不专业。" } ]},
+            { id: 402, min: 1, max: 6, text: "周五 17:55，客户来紧急需求。", choices: [ { label: "假装没看见", eff: { s: 10, c: -5 }, log: "周末爽了，周一被夺命Call。" }, { label: "通宵搞定", eff: { e: -10, p: 5 }, log: "客户满意，但错过了聚餐。" } ]},
+            { id: 403, min: 0, max: 8, text: "VPN 崩了，IT 说不知道多久修好。", choices: [ { label: "手机热点硬连", eff: { m: -0.1, p: 5 }, log: "流量燃烧，赶上进度。" }, { label: "楼下喝咖啡", eff: { s: 5, p: -5 }, log: "难得休息，有点心虚。" } ]},
+            { id: 404, min: 2, max: 7, text: "开了一下午扯皮会，无结论。", choices: [ { label: "主动整理纪要", eff: { p: 5, s: -5 }, log: "老板觉得你总结能力强。" }, { label: "私下疯狂吐槽", eff: { s: 5, c: 5 }, log: "在小群骂得很开心。" } ]},
+            { id: 405, min: 0, max: 5, text: "忘带工牌，被保安拦住。", choices: [ { label: "叫同事来接", eff: { c: -2, s: -5 }, log: "被同事嘲笑了一整天。" }, { label: "试图尾随混入", eff: { s: 5, p: -2 }, log: "被发现了，极其尴尬。" } ]},
+            { id: 406, min: 3, max: 8, text: "猎头推荐竞对高薪职位 (+50%)。", choices: [ { label: "礼貌拒绝", eff: { c: 2 }, log: "表露忠诚，留了后路。" }, { label: "偷偷发简历", eff: { s: 5, p: -5 }, log: "了解市场价也是好的。" } ]},
+            { id: 407, min: 0, max: 8, text: "续命的咖啡机坏了。", choices: [ { label: "外卖星巴克", eff: { m: -0.05, e: 2 }, log: "钱包受损，精神回归。" }, { label: "喝白开水", eff: { s: -10, p: -5 }, log: "昏昏欲睡，效率极低。" } ]},
+            { id: 408, min: 1, max: 6, text: "Excel 公式全变成 #REF!。", choices: [ { label: "狂按 Ctrl+Z", eff: { s: 5 }, log: "救回来了！感谢微软！" }, { label: "手动查错", eff: { e: -5, s: -10 }, log: "眼睛瞎了，删错一列。" } ]},
+            { id: 409, min: 4, max: 9, text: "难搞客户投诉你的态度。", choices: [ { label: "卑微道歉", eff: { s: -15, p: 5 }, log: "尊严扫地，客户消气。" }, { label: "据理力争", eff: { s: 5, p: -10 }, log: "你爽了，老板收投诉信。" } ]},
+            { id: 410, min: 0, max: 5, text: "赶 Deadline 连吃一周外卖。", choices: [ { label: "继续吃", eff: { e: -10, p: 5 }, log: "胃开始抗议，隐隐作痛。" }, { label: "准时下班做饭", eff: { e: 5, p: -5 }, log: "久违烟火气，活过来了。" } ]},
+            { id: 411, min: 2, max: 7, text: "电脑突然强制系统更新。", choices: [ { label: "对着屏幕发呆", eff: { s: 5, p: -5 }, log: "强制摸鱼，天意如此。" }, { label: "借同事电脑", eff: { p: 2, c: -2 }, log: "同事借了，但脸色不好。" } ]},
+            { id: 412, min: 1, max: 8, text: "电梯偶遇大老板，气氛凝固。", choices: [ { label: "低头装死", eff: { c: -2 }, log: "没敢抬头，空气安静。" }, { label: "硬聊天气", eff: { c: 5, s: -5 }, log: "尬聊两句，老板记住了。" } ]},
+
+            // New 500+
+            { "id": 501, "min": 0, "max": 8, "text": "公司更换了审计软件，新系统极其难用。", "choices": [{ "label": "熬夜自学", "eff": { "e": -10, "p": 5 }, "log": "掌握了新工具，但掉了几根头发。" }, { "label": "沿用旧底稿", "eff": { "p": -5, "s": 5 }, "log": "被 Manager 发现格式不对，挨骂了。" }] },
+            { "id": 502, "min": 2, "max": 6, "text": "带你的小朋友突然离职了，留下一个烂摊子。", "choices": [{ "label": "硬着头皮接手", "eff": { "e": -20, "p": 10 }, "log": "连续通宵一周，填上了坑。" }, { "label": "向上面申请借人", "eff": { "c": -5, "s": -5 }, "log": "借到了人，但被标记为'管理能力弱'。" }] },
+            { "id": 503, "min": 0, "max": 5, "text": "出差住的酒店隔音极差，隔壁吵了一整晚。", "choices": [{ "label": "忍了，戴耳塞", "eff": { "e": -10, "s": 10 }, "log": "整晚没睡好，第二天精神萎靡。" }, { "label": "投诉换房", "eff": { "e": -5, "m": -0.05 }, "log": "折腾到半夜才睡，打车费自理。" }] },
+            { "id": 504, "min": 4, "max": 8, "text": "合伙人想让你帮忙处理一点他的'私人税务'问题。", "choices": [{ "label": "帮忙搞定", "eff": { "c": 15, "s": 5 }, "log": "成为了合伙人的心腹。" }, { "label": "委婉拒绝", "eff": { "c": -10 }, "log": "合规满分，但合伙人脸色难看。" }] },
+            { "id": 505, "min": 1, "max": 8, "text": "长期伏案工作，你的颈椎发出了抗议。", "choices": [{ "label": "去按摩店", "eff": { "m": -0.2, "e": 10 }, "log": "花钱消灾，身体舒服多了。" }, { "label": "贴膏药坚持", "eff": { "e": -5 }, "log": "治标不治本，转头时咔咔响。" }] },
+            { "id": 506, "min": 0, "max": 3, "text": "Manager 让你帮忙帮他家孩子给幼儿园做个 PPT。", "choices": [{ "label": "做得花里胡哨", "eff": { "c": 10, "p": -2 }, "log": "Manager 很有面子，你成了御用美工。" }, { "label": "假装太忙", "eff": { "c": -5 }, "log": "Manager 觉得你不懂事。" }] },
+            { "id": 507, "min": 3, "max": 7, "text": "猎头说有一个去国企内审的机会，朝九晚五。", "choices": [{ "label": "去聊聊", "eff": { "s": 10, "p": -5 }, "log": "只有工资的一半，你犹豫了。" }, { "label": "还是喜欢搞钱", "eff": { "m": 0.5, "e": -5 }, "log": "继续留在四大卷。" }] },
+            { "id": 508, "min": 0, "max": 8, "text": "你发现上周报销的打车票里混进了一张 KTV 的发票。", "choices": [{ "label": "主动撤回说明", "eff": { "p": 2 }, "log": "财务夸你诚实。" }, { "label": "赌一把看不见", "eff": { "c": -10, "s": 10 }, "log": "被合规部抽查到了，通报批评。" }] },
+            { "id": 509, "min": 2, "max": 6, "text": "项目组聚餐，大家都在喝酒，你酒精过敏。", "choices": [{ "label": "以茶代酒", "eff": { "c": -5 }, "log": "大家觉得你扫兴。" }, { "label": "舍命陪君子", "eff": { "e": -15, "c": 10 }, "log": "喝进了医院，但融入了圈子。" }] },
+            { "id": 510, "min": 5, "max": 9, "text": "经济下行，所里传闻要'优化' 10% 的人员。", "choices": [{ "label": "疯狂压榨下属", "eff": { "p": 10, "c": -10 }, "log": "业绩好看了，但人心散了。" }, { "label": "保护组员", "eff": { "c": 15, "p": -5 }, "log": "你可能在名单上，但大家爱戴你。" }] },
+            { "id": 511, "min": 0, "max": 4, "text": "你的租房合同到期，房东要涨价 20%。", "choices": [{ "label": "搬家去郊区", "eff": { "m": 0.2, "e": -10 }, "log": "通勤时间变长，每天少睡一小时。" }, { "label": "接受涨价", "eff": { "m": -0.5, "s": -5 }, "log": "钱包流血，但保住了睡眠。" }] },
+            { "id": 512, "min": 1, "max": 8, "text": "同事在群里发红包，你手快抢了个最大的。", "choices": [{ "label": "发个表情包", "eff": { "c": 2 }, "log": "运气不错，心情变好了。" }, { "label": "发个更大的回去", "eff": { "m": -0.1, "c": 5 }, "log": "老板大气！" }] },
+            { "id": 513, "min": 0, "max": 5, "text": "需要在客户的一堆纸质凭证仓库里找一张发票。", "choices": [{ "label": "地毯式搜索", "eff": { "e": -10, "p": 5 }, "log": "吸了一鼻子灰，终于找到了。" }, { "label": "抽样跳过", "eff": { "s": -5, "p": -5 }, "log": "赌运气，心里不踏实。" }] },
+            { "id": 514, "min": 2, "max": 7, "text": "你的 Excel 技能太强，被隔壁组借去帮忙清洗数据。", "choices": [{ "label": "帮忙", "eff": { "c": 5, "e": -5 }, "log": "成了工具人，但欠了个人情。" }, { "label": "教会徒弟", "eff": { "e": -2, "c": 2 }, "log": "授人以渔，以后不烦你了。" }] },
+            { "id": 515, "min": 4, "max": 8, "text": "客户想邀请你去他们公司做财务经理。", "choices": [{ "label": "心动，留个微信", "eff": { "c": 5 }, "log": "这是一条不错的后路。" }, { "label": "婉拒", "eff": { "p": 5 }, "log": "客户觉得你专业度高。" }] },
+            { "id": 516, "min": 0, "max": 8, "text": "公司楼下的咖啡店倒闭了。", "choices": [{ "label": "买速溶咖啡", "eff": { "m": 0.05, "s": -2 }, "log": "难喝，但省钱。" }, { "label": "自带手冲装备", "eff": { "e": -2, "s": 5 }, "log": "很有格调，但很麻烦。" }] },
+            { "id": 517, "min": 1, "max": 6, "text": "审计现场只有一张会议桌，挤了 10 个人。", "choices": [{ "label": "抢占插座位置", "eff": { "e": 2 }, "log": "电脑满电，心情舒畅。" }, { "label": "缩在角落", "eff": { "e": -5 }, "log": "腰酸背痛，鼠标都施展不开。" }] },
+            { "id": 518, "min": 3, "max": 8, "text": "发现 Senior Manager 把你的功劳据为己有。", "choices": [{ "label": "越级汇报", "eff": { "p": 5, "c": -20 }, "log": "赢了道理，输了政治。" }, { "label": "忍气吞声", "eff": { "s": -15, "c": 5 }, "log": "SM 觉得你'懂事'，以后会补偿你。" }] },
+            { "id": 519, "min": 0, "max": 5, "text": "加班到深夜，打不到车。", "choices": [{ "label": "等排队 200 位", "eff": { "e": -5 }, "log": "到家都 3 点了。" }, { "label": "加价 50 叫专车", "eff": { "m": -0.05, "e": 5 }, "log": "为了睡觉，值得。" }] },
+            { "id": 520, "min": 2, "max": 8, "text": "你的电脑蓝屏了，IT 说硬盘坏了。", "choices": [{ "label": "崩溃大哭", "eff": { "s": -20 }, "log": "发泄出来了，但数据没了。" }, { "label": "拿出移动硬盘", "eff": { "p": 5 }, "log": "备份是个好习惯！" }] }
+        ];
+
+        // --- 2. STATE ---
+        let state = {
+            name: "Guest",
+            year: 1,
+            quarter: 1,
+            rankIdx: 0,
+            stats: { energy: 100, money: 0.8, stress: 50, conn: 0, perf: 50 },
+            history: [], // Stores event IDs
+            ap: 6,
+            allocations: {},
+            lastMaxAction: null,
+            promoChance: 0,
+            eventQueue: [],
+            quarterBuff: null // { name, type: 'busy'|'slack'|'insp' }
+        };
+
+        let isYearEndProcessing = false;
+
+        // --- 3. DOM ELEMENTS ---
+        const ui = {
+            modal: document.getElementById('modal-overlay'),
+            loginBox: document.getElementById('login-box'),
+            yeBox: document.getElementById('year-end-box'),
+            summaryBox: document.getElementById('summary-box'),
+            summaryContent: document.getElementById('summary-content'),
+            btnConfirmSummary: document.getElementById('btn-confirm-summary'),
+
+            userIn: document.getElementById('username-input'),
+            startBtn: document.getElementById('btn-start-game'),
+
+            dispName: document.getElementById('disp-name'),
+            dispTime: document.getElementById('disp-time'),
+            dispRank: document.getElementById('disp-rank'),
+            buffTag: document.getElementById('buff-tag'),
+
+            bars: {
+                energy: document.getElementById('bar-energy'),
+                money: document.getElementById('bar-money'),
+                stress: document.getElementById('bar-stress'),
+                conn: document.getElementById('bar-conn'),
+                perf: document.getElementById('bar-perf')
+            },
+
+            cardContent: document.getElementById('card-content'),
+            actionListContainer: document.getElementById('action-list-container'),
+            actionsList: document.getElementById('actions-list'),
+            apCount: document.getElementById('ap-count'),
+
+            actionArea: document.getElementById('action-area'),
+            mainBtn: document.getElementById('btn-action')
+        };
+
+        // --- 4. INIT ---
+        ui.startBtn.onclick = () => {
+            const name = ui.userIn.value.trim();
+            if(!name) return;
+            state.name = name;
+            ui.loginBox.classList.add('hidden');
+            ui.modal.classList.add('hidden');
+            initGame();
+        };
+
+        ui.btnConfirmSummary.onclick = () => {
+            ui.summaryBox.classList.add('hidden');
+            ui.modal.classList.add('hidden');
+            // Trigger Chaos Mode
+            state.eventQueue = [];
+            for(let k=0; k<3; k++) {
+                const ev = pickRandomEvent();
+                if(ev) state.eventQueue.push(ev);
+            }
+            processEventQueue();
+        };
+
+        function initGame() {
+            renderStats();
+            startQuarter();
+        }
+
+        // --- 5. CORE LOOP ---
+
+        function startQuarter() {
+            if(state.quarter > 4) {
+                if(!isYearEndProcessing) doYearEnd();
+                return;
+            }
+
+            renderStats();
+
+            // Clean up previous state
+            ui.cardContent.innerHTML = '';
+            ui.actionArea.innerHTML = '';
+
+            // Apply Quarter Buff
+            applyQuarterBuff();
+
+            // Setup AP
+            state.ap = 6 + (state.quarterBuff && state.quarterBuff.type === 'busy' ? 2 : (state.quarterBuff && state.quarterBuff.type === 'slack' ? -2 : 0));
+            state.allocations = {};
+
+            ui.actionListContainer.classList.remove('hidden');
+            ui.cardContent.classList.add('hidden');
+
+            renderActionList();
+            updateAPUI();
+        }
+
+        function applyQuarterBuff() {
+            state.quarterBuff = null;
+            ui.buffTag.style.display = 'none';
+            ui.buffTag.className = '';
+
+            if (Math.random() < 0.3) {
+                const rand = Math.random();
+                if (rand < 0.33) {
+                    state.quarterBuff = { name: '状态: 忙季', type: 'busy' };
+                    ui.buffTag.className = 'buff-busy';
+                } else if (rand < 0.66) {
+                    state.quarterBuff = { name: '状态: 淡季', type: 'slack' };
+                    ui.buffTag.className = 'buff-slack';
+                } else {
+                    state.quarterBuff = { name: '状态: 监管检查', type: 'insp' };
+                    ui.buffTag.className = 'buff-insp';
+                }
+                ui.buffTag.textContent = state.quarterBuff.name;
+                ui.buffTag.style.display = 'inline-block';
+            }
+        }
+
+        function getActionPool() {
+            if (state.rankIdx >= 8) return ACTION_POOLS.partner;
+            if (state.rankIdx >= 5) return ACTION_POOLS.manager;
+            return ACTION_POOLS.associate;
+        }
+
+        function renderActionList() {
+            ui.actionsList.innerHTML = '';
+            const pool = getActionPool();
+
+            pool.forEach(act => {
+                const row = document.createElement('div');
+                row.className = 'action-row';
+                row.id = `row-${act.id}`;
+                row.innerHTML = `
+                    <div class="act-info">
+                        <div class="act-name">${act.name}</div>
+                        <div class="act-desc">${act.desc}</div>
+                    </div>
+                    <div class="stepper">
+                        <button class="step-btn" onclick="modAP('${act.id}', -1)">-</button>
+                        <div class="step-val" id="val-${act.id}">0</div>
+                        <button class="step-btn" onclick="modAP('${act.id}', 1)">+</button>
+                    </div>
+                `;
+                ui.actionsList.appendChild(row);
+                state.allocations[act.id] = 0;
+            });
+        }
+
+        window.modAP = function(id, delta) {
+            const current = state.allocations[id];
+            if (delta > 0 && state.ap <= 0) return;
+            if (delta < 0 && current <= 0) return;
+            state.allocations[id] += delta;
+            state.ap -= delta;
+            updateAPUI();
+            if (navigator.vibrate) navigator.vibrate(10);
+        };
+
+        function updateAPUI() {
+            const max = 6 + (state.quarterBuff && state.quarterBuff.type === 'busy' ? 2 : (state.quarterBuff && state.quarterBuff.type === 'slack' ? -2 : 0));
+            ui.apCount.textContent = `AP: ${state.ap} / ${max}`;
+
+            for (let id in state.allocations) {
+                document.getElementById(`val-${id}`).textContent = state.allocations[id];
+                const row = document.getElementById(`row-${id}`);
+                if (state.allocations[id] > 0) row.classList.add('active');
+                else row.classList.remove('active');
+            }
+
+            const pool = getActionPool();
+            pool.forEach(act => {
+                const plusBtn = document.querySelector(`#row-${act.id} .step-btn:last-child`);
+                plusBtn.disabled = (state.ap <= 0);
+            });
+
+            const usedAP = max - state.ap;
+            const btn = document.getElementById('btn-run-q');
+            if (!btn) {
+                ui.actionArea.innerHTML = `<button class="btn-main" id="btn-run-q">执行计划</button>`;
+                document.getElementById('btn-run-q').onclick = runQuarter;
+            } else {
+                btn.disabled = (usedAP === 0);
+                if (usedAP > 0) {
+                    btn.textContent = state.ap > 0 ? `执行计划 (剩余 ${state.ap} AP)` : "执行计划";
+                    btn.style.background = getComputedStyle(document.documentElement).getPropertyValue('--accent-blue');
+                } else {
+                    btn.textContent = "请分配 AP";
+                    btn.style.background = '#1C1C1E';
+                }
+            }
+        }
+
+        async function runQuarter() {
+            ui.actionListContainer.classList.add('hidden');
+            ui.cardContent.classList.remove('hidden');
+            ui.cardContent.innerHTML = '';
+            ui.actionArea.innerHTML = '';
+
+            const pool = getActionPool();
+            let maxAP = 0;
+            let currentMaxAction = null;
+            let actionSummary = [];
+            let netEffects = { e:0, m:0, s:0, c:0, p:0 };
+
+            const activeActions = pool.filter(a => state.allocations[a.id] > 0);
+
+            for (let act of activeActions) {
+                const count = state.allocations[act.id];
+                if (count > maxAP) {
+                    maxAP = count;
+                    currentMaxAction = act.id;
+                }
+
+                // Diminishing Returns logic
+                let isDiminished = false;
+                // Threshold depends on base? Fixed at >3 for now (half of 6)
+                if (state.lastMaxAction === act.id && count > 3) {
+                    isDiminished = true;
+                }
+
+                actionSummary.push(`${act.name} x${count} ${isDiminished ? '<span style="color:red">(效率降低)</span>' : ''}`);
+
+                // Apply Buff Modifiers
+                let buffMod = { cost: 1, gain: 1, p_flat: 0 };
+                if (state.quarterBuff) {
+                    if (state.quarterBuff.type === 'busy') buffMod.cost = 2; // Extra cost
+                    if (state.quarterBuff.type === 'slack') buffMod.gain = 1; // Base gain, handle special rule below
+                    if (state.quarterBuff.type === 'insp' && (act.id === 'slack' || act.id === 'gossip')) buffMod.p_flat = -20;
+                }
+
+                for (let k in act.base) {
+                    let val = act.base[k] * count;
+
+                    // Buffs
+                    if (state.quarterBuff && state.quarterBuff.type === 'busy' && (k === 'e' || k === 's') && val < 0) {
+                        val *= 1.5; // "Extra cost" approximation
+                    }
+                    // Slack: recover stress per AP? Not implemented on base action, simpler to just add net effect at end or assume built into AP reduction?
+                    // Prompt: "Slack Season: AP -2, but recover 2 stress per AP used".
+                    // We can add this to netEffects later based on total AP used.
+
+                    if (isDiminished) {
+                        const isCost = (val < 0 && k !== 's') || (val > 0 && k === 's');
+                        if (isCost) val *= 1.5;
+                        else val *= 0.5;
+                    }
+
+                    if (k !== 'promo') netEffects[k] += val;
+                }
+
+                if (buffMod.p_flat) netEffects.p += buffMod.p_flat;
+                if (act.base.promo) state.promoChance += (act.base.promo * count);
+            }
+
+            // Slack Season Recovery
+            if (state.quarterBuff && state.quarterBuff.type === 'slack') {
+                const totalUsed = activeActions.reduce((sum, a) => sum + state.allocations[a.id], 0);
+                netEffects.s -= (totalUsed * 2);
+            }
+
+            state.lastMaxAction = currentMaxAction;
+
+            const pay = SALARY[state.rankIdx];
+            netEffects.m += pay;
+
+            applyEffect(netEffects);
+
+            ui.modal.classList.remove('hidden');
+            ui.summaryBox.classList.remove('hidden');
+
+            const summaryHtml = `
+                <div style="margin-bottom:15px; font-weight:600;">本季度重点：</div>
+                <ul style="padding-left:20px; margin-bottom:20px; color:#555;">
+                    ${actionSummary.map(s => `<li>${s}</li>`).join('')}
+                </ul>
+                <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
+                <div style="font-weight:600; margin-bottom:10px;">数值变动 (净值)：</div>
+                <div>${formatDiff(netEffects, true)}</div>
+                <div style="margin-top:10px; font-size:12px; color:#888;">*薪资已入账</div>
+            `;
+            ui.summaryContent.innerHTML = summaryHtml;
+        }
+
+        function pickRandomEvent() {
+            // Anti-Repetition: Queue Size 30
+            const pool = EVENTS.filter(e =>
+                state.rankIdx >= e.min &&
+                state.rankIdx <= e.max &&
+                !state.history.includes(e.id)
+            );
+
+            let event;
+            if(pool.length === 0) {
+                if (state.history.length > 0) {
+                    state.history.shift();
+                    return pickRandomEvent();
+                }
+                const anyPool = EVENTS.filter(e => state.rankIdx >= e.min && state.rankIdx <= e.max);
+                event = anyPool[Math.floor(Math.random() * anyPool.length)];
+            } else {
+                event = pool[Math.floor(Math.random() * pool.length)];
+            }
+
+            if(event) {
+                state.history.push(event.id);
+                // Queue limit 30
+                if(state.history.length > 30) state.history.shift();
+            }
+            return event;
+        }
+
+        async function processEventQueue() {
+            if(state.eventQueue.length === 0) {
+                ui.actionArea.innerHTML = `<button class="btn-main" id="btn-cont">下一季度</button>`;
+                document.getElementById('btn-cont').onclick = () => {
+                    state.quarter++;
+                    startQuarter();
+                };
+                return;
+            }
+
+            const event = state.eventQueue.shift();
+            await renderEvent(event);
+        }
+
+        async function renderEvent(event) {
+            await typeBlock("突发事件", event.text, "");
+
+            const container = document.createElement('div');
+            container.style.marginTop = "20px";
+            container.style.animation = "fadeIn 0.5s";
+
+            event.choices.forEach(c => {
+                const btn = document.createElement('div');
+                btn.className = 'choice-btn';
+                btn.textContent = c.label;
+                btn.onclick = () => {
+                    resolveEvent(c);
+                };
+                container.appendChild(btn);
+            });
+
+            ui.actionArea.innerHTML = '';
+            ui.actionArea.appendChild(container);
+        }
+
+        function resolveEvent(choice) {
+            applyEffect(choice.eff);
+            const diffStr = formatDiff(choice.eff);
+
+            const resDiv = document.createElement('div');
+            resDiv.className = 'text-block';
+            resDiv.innerHTML = `<div class="text-sys">结果</div><div>${choice.log}${diffStr}</div>`;
+            ui.cardContent.appendChild(resDiv);
+            resDiv.scrollIntoView({behavior: "smooth"});
+
+            const dead = checkDeath();
+            if(dead) {
+                ui.actionArea.innerHTML = `<button class="btn-main" style="background:var(--accent-red)" onclick="location.reload()">Game Over: ${dead}</button>`;
+                return;
+            }
+
+            setTimeout(processEventQueue, 800);
+        }
+
+        // --- 6. HELPERS ---
+
+        function applyEffect(eff) {
+            if(!eff) return;
+            const s = state.stats;
+            if(eff.e) s.energy = clamp(s.energy + eff.e, 0, 100);
+            if(eff.m) s.money = Number((s.money + eff.m).toFixed(2));
+            if(eff.s) s.stress = clamp(s.stress + eff.s, 0, 100);
+            if(eff.c) s.conn = clamp(s.conn + eff.c, 0, 100);
+            if(eff.p) s.perf = clamp(s.perf + eff.p, 0, 100);
+            renderStats();
+        }
+
+        function formatDiff(eff, isBlock = false) {
+            if(!eff) return "";
+            let parts = [];
+            ['p', 'e', 'm', 's', 'c'].forEach(k => {
+                if(eff[k]) {
+                    const val = Number(eff[k].toFixed(1));
+                    const label = STAT_MAP[k];
+                    const sign = val > 0 ? '+' : '';
+                    const cls = getDiffClass(k, val);
+                    const unit = k === 'm' ? '万' : '';
+                    parts.push(isBlock
+                        ? `<div style="margin-bottom:4px;"><span class="${cls}" style="font-weight:bold;">${label} ${sign}${val}${unit}</span></div>`
+                        : `<span class="${cls}">${label} ${sign}${val}${unit}</span>`
+                    );
+                }
+            });
+            if(parts.length === 0) return "";
+            return isBlock ? parts.join('') : `<span class="feedback-span">(${parts.join(', ')})</span>`;
+        }
+
+        function getDiffClass(key, val) {
+            if(key === 's') return val < 0 ? 'diff-pos' : 'diff-neg';
+            return val > 0 ? 'diff-pos' : 'diff-neg';
+        }
+
+        function checkDeath() {
+            const s = state.stats;
+            if(s.energy <= 0) return "过劳死 (ICU)";
+            if(s.money < -5) return "破产 (Bankrupt)";
+            if(s.stress >= 100) return "精神崩溃 (Burnout)";
+            return null;
+        }
+
+        function renderStats() {
+            ui.bars.energy.style.width = state.stats.energy + '%';
+            ui.bars.money.style.width = Math.min(100, (state.stats.money/100)*100) + '%';
+            ui.bars.stress.style.width = state.stats.stress + '%';
+            ui.bars.conn.style.width = state.stats.conn + '%';
+            ui.bars.perf.style.width = state.stats.perf + '%';
+
+            ui.dispName.textContent = state.name;
+            ui.dispTime.textContent = `第 ${state.year} 年 Q${state.quarter}`;
+            ui.dispRank.textContent = RANKS[state.rankIdx];
+        }
+
+        async function typeBlock(title, text, metaHtml) {
+            const div = document.createElement('div');
+            div.className = 'text-block';
+            div.innerHTML = `<div class="text-sys">${title}</div><div class="content-span"></div>`;
+            ui.cardContent.appendChild(div);
+
+            const span = div.querySelector('.content-span');
+            span.classList.add('type-cursor');
+            div.scrollIntoView({behavior: "smooth"});
+
+            for(let char of text) {
+                span.textContent += char;
+                await wait(20);
+            }
+
+            if(metaHtml) {
+                span.innerHTML += ` ${metaHtml}`;
+            }
+
+            span.classList.remove('type-cursor');
+        }
+
+        // --- 7. YEAR END ---
+        function doYearEnd() {
+            if (isYearEndProcessing) return;
+            isYearEndProcessing = true;
+
+            ui.modal.classList.remove('hidden');
+            ui.loginBox.classList.add('hidden');
+            ui.summaryBox.classList.add('hidden');
+            ui.yeBox.classList.remove('hidden');
+
+            const s = state.stats;
+            const idx = state.rankIdx;
+
+            let resultType = "STAY";
+            let msg = "";
+
+            if (s.perf < 30) {
+                resultType = "FIRE";
+                msg = `你的绩效仅为 ${s.perf} 分，远低于标准。HR 找你谈话了，建议你拿 N+1 走人。`;
+            } else {
+                if (idx < 5) {
+                    if (s.perf > 80) {
+                        resultType = "PROMO";
+                        msg = `你的绩效高达 ${s.perf} 分，表现优异，获得晋升！`;
+                    } else {
+                        msg = `你的绩效为 ${s.perf} 分。表现尚可，但未达到卓越标准 (80+)，今年原地踏步。`;
+                    }
+                } else if (idx >= 5 && idx < 7) {
+                    if (s.perf > 80 && s.conn > 60) {
+                        resultType = "PROMO";
+                        msg = `作为 Manager，你绩效出色 (${s.perf}) 且人脉广泛 (${s.conn})，成功晋升！`;
+                    } else {
+                        msg = `你的绩效 (${s.perf}) 或人脉 (${s.conn}) 未达标 (需 P>80, C>60)。作为管理层，光干活是不够的。`;
+                    }
+                } else if (idx === 7) {
+                    if (s.conn > 90 && s.stress < 50) {
+                        resultType = "PROMO";
+                        msg = `你拥有顶级的客户资源 (人脉 ${s.conn}) 和强大的心理素质 (压力 ${s.stress})。恭喜成为合伙人！`;
+                    } else {
+                        msg = `合伙人门槛极高。你需要极强的人脉 (>90) 和强大的抗压能力 (压力 < 50)。目前: C${s.conn}, S${s.stress}。`;
+                    }
+                } else {
+                    msg = "你已经是 Firm 的主人了。享受分红吧。";
+                }
+            }
+
+            let title = "年终评估";
+            let btnText = "开启下一年";
+            let onBtn = null;
+
+            if (resultType === "FIRE") {
+                title = "BAD ENDING: 被劝退";
+                btnText = "Game Over (重开)";
+                onBtn = () => location.reload();
+            } else if (resultType === "PROMO") {
+                if (state.rankIdx === 7) {
+                    title = "VICTORY: 荣升合伙人";
+                    btnText = "Game Over (胜利)";
+                    onBtn = () => location.reload();
+                    state.rankIdx++;
+                } else {
+                    title = "CONGRATULATIONS: 晋升";
+                    state.rankIdx++;
+                }
+            }
+
+            document.getElementById('ye-title').textContent = title;
+            document.getElementById('ye-content').innerHTML = `
+                <p>${msg}</p>
+                <hr>
+                <div style="font-size:12px; color:#666;">
+                    <p>绩效评分: ${s.perf}</p>
+                    <p>人脉指数: ${s.conn}</p>
+                    <p>心理压力: ${s.stress}</p>
+                    <p>累积财富: ${s.money}万</p>
+                </div>
+            `;
+
+            document.getElementById('btn-next-year').textContent = btnText;
+            document.getElementById('btn-next-year').onclick = onBtn || (() => {
+                state.year++;
+                state.quarter = 1;
+                state.promoChance = 0;
+                state.stats.energy = 100;
+                state.stats.stress = Math.max(0, state.stats.stress - 20);
+                state.stats.perf = 50;
+
+                isYearEndProcessing = false;
+                ui.modal.classList.add('hidden');
+
+                // Clear state
+                state.eventQueue = [];
+                startQuarter();
+            });
+        }
+
+        const wait = ms => new Promise(r => setTimeout(r, ms));
+        const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
+
+    </script>
+</body>
+</html>
